@@ -19,7 +19,7 @@ public class Main {
     public static void main(String[] args) throws IOException, URISyntaxException {
           switch (args.length) {
             case 0:
-                new Main().download();
+                new Main().run();
                 break;
             default:
                 throw new IllegalArgumentException("unexpected arguments: " + args.length);
@@ -38,18 +38,14 @@ public class Main {
         this.console = Console.create(world);
     }
 
-    public void download() throws IOException {
-        FileNode destImage;
+    public void run() throws IOException {
         FileNode card;
         FileNode src;
         FileNode destRaf;
         FileNode destDng;
         List<Node> list;
-        String name;
         List<String> rafNames;
-        long timestamp;
         long firstTimestamp;
-        long lastTimestamp;
 
         // no card, no fun
         card = world.file("/Volumes/UNTITLED");
@@ -78,8 +74,26 @@ public class Main {
             }
         }
 
-        console.info.println("downloading " + list.size() + " images to " + destRaf);
         rafNames = new ArrayList<>();
+        firstTimestamp = download(destRaf, list, rafNames);
+
+        onCardBackup(card, src);
+        eject(card);
+        toDng(destRaf, destDng, rafNames);
+        geotags(destDng, rafNames, firstTimestamp);
+
+        console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
+        console.info.println("and run bildersync to save some memory");
+    }
+
+    private long download(FileNode destRaf, List<Node> list, List<String> rafNames) throws IOException {
+        long firstTimestamp;
+        long lastTimestamp;
+        String name;
+        FileNode destImage;
+        long timestamp;
+
+        console.info.println("downloading " + list.size() + " images to " + destRaf);
         firstTimestamp = Long.MAX_VALUE;
         lastTimestamp = Long.MIN_VALUE;
         for (Node image : list) {
@@ -96,14 +110,7 @@ public class Main {
         }
         console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
-
-        onCardBackup(card, src);
-        eject(card);
-        toDng(destRaf, destDng, rafNames);
-        geotags(destDng, rafNames, firstTimestamp);
-
-        console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
-        console.info.println("and run bildersync to save some memory");
+        return firstTimestamp;
     }
 
     private void toDng(FileNode destRaf, FileNode destDng, List<String> rafNames) throws Failure {

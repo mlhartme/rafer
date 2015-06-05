@@ -1,10 +1,15 @@
 package rafer;
 
 import net.oneandone.sushi.cli.Console;
+import net.oneandone.sushi.fs.DeleteException;
 import net.oneandone.sushi.fs.DirectoryNotFoundException;
+import net.oneandone.sushi.fs.ExistsException;
 import net.oneandone.sushi.fs.GetLastModifiedException;
 import net.oneandone.sushi.fs.ListException;
+import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
+import net.oneandone.sushi.fs.NodeAlreadyExistsException;
+import net.oneandone.sushi.fs.NodeNotFoundException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.launcher.Launcher;
@@ -35,7 +40,6 @@ public class Main {
         Console console;
         FileNode destImage;
         FileNode card;
-        FileNode downloaded;
         FileNode src;
         FileNode destRaf;
         FileNode destDng;
@@ -78,13 +82,6 @@ public class Main {
             }
         }
 
-        downloaded = card.join("DOWNLOADED");
-        if (downloaded.isDirectory()) {
-            console.error.println("deleting " + downloaded);
-            downloaded.deleteTree();
-        }
-        downloaded.checkNotExists();
-
         console.info.println("downloading " + list.size() + " images to " + destRaf);
         rafNames = new ArrayList<>();
         firstTimestamp = Long.MAX_VALUE;
@@ -103,8 +100,8 @@ public class Main {
         }
         console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
-        console.info.println("moving " + src + " to " + downloaded);
-        src.move(downloaded);
+
+        onCardBackup(console, card, src);
 
         try {
             console.info.println(card.getParent().exec("diskutil", "eject", card.getName()));
@@ -126,6 +123,20 @@ public class Main {
 
         console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
         console.info.println("and run bildersync to save some memory");
+    }
+
+    private static void onCardBackup(Console console, FileNode card, FileNode src) throws IOException {
+        FileNode downloaded;
+
+        downloaded = card.join("DOWNLOADED");
+        if (downloaded.isDirectory()) {
+            console.error.println("deleting " + downloaded);
+            downloaded.deleteTree();
+        }
+        downloaded.checkNotExists();
+
+        console.info.println("moving " + src + " to " + downloaded);
+        src.move(downloaded);
     }
 
     private static void geotags(Console console, FileNode dir, List<String> rafs, long firstTimestamp) throws IOException {

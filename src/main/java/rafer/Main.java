@@ -32,27 +32,26 @@ public class Main {
 
     private final World world;
     private final Console console;
+    private final FileNode card;
 
-    public Main() {
+    public Main() throws IOException {
         this.world = new World();
         this.console = Console.create(world);
+        // no card, no fun
+        this.card = world.file("/Volumes/UNTITLED");
+        this.card.checkDirectory();
     }
 
     public void run() throws IOException {
-        FileNode card;
         FileNode src;
-        FileNode destRaf;
+        FileNode destRafDir;
         FileNode destDng;
-        List<Node> list;
+        List<Node> srcRafs;
         List<String> rafNames;
         long firstTimestamp;
 
-        // no card, no fun
-        card = world.file("/Volumes/UNTITLED");
-        card.checkDirectory();
-
-        destRaf = (FileNode) world.getHome().join("Downloads/card/raf/" + FMT.format(new Date()));
-        destRaf.mkdirs();
+        destRafDir = (FileNode) world.getHome().join("Downloads/card/raf/" + FMT.format(new Date()));
+        destRafDir.mkdirs();
         destDng = (FileNode) world.getHome().join("Downloads/card/dng");
         if (!destDng.exists()) {
             destDng.mkdirs();
@@ -62,51 +61,51 @@ public class Main {
 
         src = card.join("DCIM");
         src.checkDirectory();
-        list = src.find("**/*.RAF");
-        if (list.isEmpty()) {
+        srcRafs = src.find("**/*.RAF");
+        if (srcRafs.isEmpty()) {
             throw new IOException("no images in " + src);
         }
         for (Node n : src.find("**/*")) {
             if (n.isDirectory()) {
                 // ignore
-            } else if (!list.contains(n)) {
+            } else if (!srcRafs.contains(n)) {
                 throw new IOException("unexpected file in image folder: " + n);
             }
         }
 
         rafNames = new ArrayList<>();
-        firstTimestamp = download(destRaf, list, rafNames);
+        firstTimestamp = download(srcRafs, destRafDir, rafNames);
 
-        onCardBackup(card, src);
-        eject(card);
-        toDng(destRaf, destDng, rafNames);
+        onCardBackup(src);
+        eject();
+        toDng(destRafDir, destDng, rafNames);
         geotags(destDng, rafNames, firstTimestamp);
 
         console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
         console.info.println("and run bildersync to save some memory");
     }
 
-    private long download(FileNode destRaf, List<Node> list, List<String> rafNames) throws IOException {
+    private long download(List<Node> srcRafs, FileNode destRafDir, List<String> rafNames) throws IOException {
         long firstTimestamp;
         long lastTimestamp;
         String name;
-        FileNode destImage;
+        FileNode destRaf;
         long timestamp;
 
-        console.info.println("downloading " + list.size() + " images to " + destRaf);
+        console.info.println("downloading " + srcRafs.size() + " images to " + destRafDir);
         firstTimestamp = Long.MAX_VALUE;
         lastTimestamp = Long.MIN_VALUE;
-        for (Node image : list) {
-            name = image.getName();
-            destImage = destRaf.join(name);
-            image.copyFile(destImage);
-            timestamp = image.getLastModified();
-            firstTimestamp = Math.min(firstTimestamp, timestamp);
-            lastTimestamp = Math.max(lastTimestamp, timestamp);
-            destImage.setLastModified(timestamp);
+        for (Node srcRaf : srcRafs) {
+            name = srcRaf.getName();
             if (!rafNames.add(name)) {
                 throw new IOException("naming clash: " + name);
             }
+            destRaf = destRafDir.join(name);
+            srcRaf.copyFile(destRaf);
+            timestamp = srcRaf.getLastModified();
+            firstTimestamp = Math.min(firstTimestamp, timestamp);
+            lastTimestamp = Math.max(lastTimestamp, timestamp);
+            destRaf.setLastModified(timestamp);
         }
         console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
@@ -128,7 +127,7 @@ public class Main {
         console.info.println("(" + millis + "s, " + millis/rafNames.size() + "s/pic)");
     }
 
-    private void eject(FileNode card) {
+    private void eject() {
         try {
             console.info.println(card.getParent().exec("diskutil", "eject", card.getName()));
         } catch (IOException e) {
@@ -136,7 +135,7 @@ public class Main {
         }
     }
 
-    private void onCardBackup(FileNode card, FileNode src) throws IOException {
+    private void onCardBackup(FileNode src) throws IOException {
         FileNode downloaded;
 
         downloaded = card.join("DOWNLOADED");

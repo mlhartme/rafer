@@ -4,6 +4,7 @@ import net.oneandone.sushi.cli.Console;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
+import net.oneandone.sushi.launcher.Failure;
 import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 
@@ -43,11 +44,9 @@ public class Main {
         FileNode src;
         FileNode destRaf;
         FileNode destDng;
-        Launcher converter;
         List<Node> list;
         String name;
         List<String> rafNames;
-        long millis;
         long timestamp;
         long firstTimestamp;
         long lastTimestamp;
@@ -99,12 +98,17 @@ public class Main {
                 + FMT.format(new Date(lastTimestamp)));
 
         onCardBackup(card, src);
+        eject(card);
+        toDng(destRaf, destDng, rafNames);
+        geotags(destDng, rafNames, firstTimestamp);
 
-        try {
-            console.info.println(card.getParent().exec("diskutil", "eject", card.getName()));
-        } catch (IOException e) {
-            console.info.println("WARNING: eject failed");
-        }
+        console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
+        console.info.println("and run bildersync to save some memory");
+    }
+
+    private void toDng(FileNode destRaf, FileNode destDng, List<String> rafNames) throws Failure {
+        long millis;
+        Launcher converter;
 
         console.info.println("converting " + rafNames.size() + " images");
         millis = System.currentTimeMillis();
@@ -115,11 +119,14 @@ public class Main {
         millis = System.currentTimeMillis() - millis;
         millis = (millis + 500) / 1000;
         console.info.println("(" + millis + "s, " + millis/rafNames.size() + "s/pic)");
+    }
 
-        geotags(destDng, rafNames, firstTimestamp);
-
-        console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
-        console.info.println("and run bildersync to save some memory");
+    private void eject(FileNode card) {
+        try {
+            console.info.println(card.getParent().exec("diskutil", "eject", card.getName()));
+        } catch (IOException e) {
+            console.info.println("WARNING: eject failed");
+        }
     }
 
     private void onCardBackup(FileNode card, FileNode src) throws IOException {

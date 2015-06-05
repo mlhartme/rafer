@@ -1,15 +1,7 @@
 package rafer;
 
 import net.oneandone.sushi.cli.Console;
-import net.oneandone.sushi.fs.DeleteException;
-import net.oneandone.sushi.fs.DirectoryNotFoundException;
-import net.oneandone.sushi.fs.ExistsException;
-import net.oneandone.sushi.fs.GetLastModifiedException;
-import net.oneandone.sushi.fs.ListException;
-import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
-import net.oneandone.sushi.fs.NodeAlreadyExistsException;
-import net.oneandone.sushi.fs.NodeNotFoundException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.launcher.Launcher;
@@ -26,7 +18,7 @@ public class Main {
     public static void main(String[] args) throws IOException, URISyntaxException {
           switch (args.length) {
             case 0:
-                download();
+                new Main().download();
                 break;
             default:
                 throw new IllegalArgumentException("unexpected arguments: " + args.length);
@@ -35,9 +27,17 @@ public class Main {
 
     private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd-HH:mm");
 
-    public static void download() throws IOException {
-        World world;
-        Console console;
+    //--
+
+    private final World world;
+    private final Console console;
+
+    public Main() {
+        this.world = new World();
+        this.console = Console.create(world);
+    }
+
+    public void download() throws IOException {
         FileNode destImage;
         FileNode card;
         FileNode src;
@@ -51,9 +51,6 @@ public class Main {
         long timestamp;
         long firstTimestamp;
         long lastTimestamp;
-
-        world = new World();
-        console = Console.create(world);
 
         // no card, no fun
         card = world.file("/Volumes/UNTITLED");
@@ -101,7 +98,7 @@ public class Main {
         console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
 
-        onCardBackup(console, card, src);
+        onCardBackup(card, src);
 
         try {
             console.info.println(card.getParent().exec("diskutil", "eject", card.getName()));
@@ -119,13 +116,13 @@ public class Main {
         millis = (millis + 500) / 1000;
         console.info.println("(" + millis + "s, " + millis/rafNames.size() + "s/pic)");
 
-        geotags(console, destDng, rafNames, firstTimestamp);
+        geotags(destDng, rafNames, firstTimestamp);
 
         console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
         console.info.println("and run bildersync to save some memory");
     }
 
-    private static void onCardBackup(Console console, FileNode card, FileNode src) throws IOException {
+    private void onCardBackup(FileNode card, FileNode src) throws IOException {
         FileNode downloaded;
 
         downloaded = card.join("DOWNLOADED");
@@ -139,7 +136,7 @@ public class Main {
         src.move(downloaded);
     }
 
-    private static void geotags(Console console, FileNode dir, List<String> rafs, long firstTimestamp) throws IOException {
+    private void geotags(FileNode dir, List<String> rafs, long firstTimestamp) throws IOException {
         List<FileNode> tracks;
         Launcher launcher;
 

@@ -9,90 +9,122 @@ import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws IOException, URISyntaxException {
-          switch (args.length) {
-            case 0:
-                new Main().run();
-                break;
-            default:
-                throw new IllegalArgumentException("unexpected arguments: " + args.length);
+    public static void main(String[] args) {
+        System.exit(run(args));
+    }
+
+    public static int run(String ... args) {
+        World world;
+        Console console;
+        FileNode card;
+        FileNode dest;
+        FileNode tmp;
+
+        world = new World();
+        console = Console.create(world);
+        if (args.length != 1) {
+            console.error.println("unexpected argument(s)");
+            return 1;
+        }
+        card = world.file("/Volumes/UNTITLED");
+        tmp = (FileNode) console.world.getHome().join("Downloads/card/raf");
+        dest = (FileNode) console.world.getHome().join("Downloads/card/dng");
+        try {
+            new Main(console, card, tmp, dest).run();
+            return 0;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            console.error.println(e.getMessage());
+            e.printStackTrace(console.verbose);
+            return 1;
         }
     }
 
-    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd-HH:mm");
+    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
 
     //--
 
-    private final World world;
     private final Console console;
     private final FileNode card;
+    private final FileNode destDng;
+    private final FileNode tmpDir;
 
-    public Main() throws IOException {
-        this.world = new World();
-        this.console = Console.create(world);
+    public Main(Console console, FileNode card, FileNode tmpDir, FileNode destDng) throws IOException {
+        this.console = console;
         // no card, no fun
-        this.card = world.file("/Volumes/UNTITLED");
-        this.card.checkDirectory();
+        this.card = card;
+        this.tmpDir = tmpDir;
+        this.destDng = destDng;
     }
 
     public void run() throws IOException {
-        FileNode src;
-        FileNode destRafDir;
-        FileNode destDng;
+        FileNode tmp;
         List<Node> srcRafs;
         List<String> rafNames;
         long firstTimestamp;
+        FileNode dcim;
 
-        destRafDir = (FileNode) world.getHome().join("Downloads/card/raf/" + FMT.format(new Date()));
-        destRafDir.mkdirs();
-        destDng = (FileNode) world.getHome().join("Downloads/card/dng");
-        if (!destDng.exists()) {
-            destDng.mkdirs();
-        } else if (!destDng.find("*.dng").isEmpty()) {
-            throw new IOException("previous download has not been imported into Lightroom");
-        }
+        directory("card", card);
+        directory("dest", destDng);
+        tmp = tmpDir.join(FMT.format(new Date()));
+        tmp.mkdir();
 
-        src = card.join("DCIM");
-        src.checkDirectory();
-        srcRafs = src.find("**/*.RAF");
-        if (srcRafs.isEmpty()) {
-            throw new IOException("no images in " + src);
-        }
-        for (Node n : src.find("**/*")) {
-            if (n.isDirectory()) {
-                // ignore
-            } else if (!srcRafs.contains(n)) {
-                throw new IOException("unexpected file in image folder: " + n);
-            }
-        }
-
+        dcim = card.join("DCIM");
+        srcRafs = findRafs(dcim);
         rafNames = new ArrayList<>();
-        firstTimestamp = download(srcRafs, destRafDir, rafNames);
-
-        onCardBackup(src);
-        eject();
-        toDng(destRafDir, destDng, rafNames);
+        firstTimestamp = download(srcRafs, tmp, rafNames);
+        onCardBackup(dcim);
+        if (card.getParent().getName().equals("/Volumes")) {
+            eject();
+        }
+        toDng(tmp, rafNames);
         geotags(destDng, rafNames, firstTimestamp);
 
         console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
         console.info.println("and run bildersync to save some memory");
     }
 
-    private long download(List<Node> srcRafs, FileNode destRafDir, List<String> rafNames) throws IOException {
+    private static List<Node> findRafs(FileNode dcim) throws IOException {
+        List<Node> result;
+
+        dcim.checkDirectory();
+        result = dcim.find("**/*.RAF");
+        if (result.isEmpty()) {
+            throw new IOException("no images in " + dcim);
+        }
+        for (Node other : dcim.find("**/*")) {
+            if (other.isDirectory()) {
+                // ignore
+            } else if (other.getName().equals(".DS_Store")) {
+                // ignore
+            } else if (!result.contains(other)) {
+                throw new IOException("unexpected file in image folder: " + other);
+            }
+        }
+        return result;
+    }
+
+    private static void directory(String name, FileNode dir) throws IOException {
+        if (!dir.isDirectory()) {
+            throw new IOException(name + " not found: " + dir.getAbsolute());
+        }
+    }
+
+    private long download(List<Node> srcRafs, FileNode dest, List<String> rafNames) throws IOException {
         long firstTimestamp;
         long lastTimestamp;
         String name;
         FileNode destRaf;
         long timestamp;
 
-        console.info.println("downloading " + srcRafs.size() + " images to " + destRafDir);
+        console.info.println("downloading " + srcRafs.size() + " images to " + dest);
         firstTimestamp = Long.MAX_VALUE;
         lastTimestamp = Long.MIN_VALUE;
         for (Node srcRaf : srcRafs) {
@@ -100,7 +132,7 @@ public class Main {
             if (!rafNames.add(name)) {
                 throw new IOException("naming clash: " + name);
             }
-            destRaf = destRafDir.join(name);
+            destRaf = dest.join(name);
             srcRaf.copyFile(destRaf);
             timestamp = srcRaf.getLastModified();
             firstTimestamp = Math.min(firstTimestamp, timestamp);
@@ -112,13 +144,13 @@ public class Main {
         return firstTimestamp;
     }
 
-    private void toDng(FileNode destRaf, FileNode destDng, List<String> rafNames) throws Failure {
+    private void toDng(FileNode working, List<String> rafNames) throws Failure {
         long millis;
         Launcher converter;
 
         console.info.println("converting " + rafNames.size() + " images");
         millis = System.currentTimeMillis();
-        converter = new Launcher(destRaf, "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter");
+        converter = new Launcher(working, "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter");
         converter.arg("-d", destDng.getAbsolute());
         converter.args(rafNames);
         converter.exec(console.info);

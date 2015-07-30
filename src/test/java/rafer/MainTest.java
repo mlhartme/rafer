@@ -8,6 +8,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
+
 public class MainTest {
     @Test
     public void foo() throws IOException {
@@ -16,6 +18,8 @@ public class MainTest {
         FileNode root;
         Main main;
         FileNode card;
+        FileNode dest;
+        FileNode rafs;
 
         world = new World();
         home = world.guessProjectHome(MainTest.class);
@@ -23,8 +27,11 @@ public class MainTest {
         root.deleteTreeOpt();
         root.mkdirsOpt();
         card = root.join("card").mkdir();
-        home.join("src/test/rafs").copyDirectory(card.join("DCIM").mkdir());
-        main = new Main(Console.create(world), card, root.join("tmp").mkdir(), root.join("dest").mkdir());
+        dest = root.join("dest");
+        rafs = home.join("src/test/rafs");
+        rafs.copyDirectory(card.join("DCIM").mkdir());
+        main = new Main(Console.create(world), card, root.join("tmp").mkdir(), dest.mkdir());
         main.run();
+        assertEquals(rafs.list().size(), dest.find("**/*.dng").size());
     }
 }

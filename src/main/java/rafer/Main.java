@@ -48,6 +48,7 @@ public class Main {
     }
 
     private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
+    private static final SimpleDateFormat PATH_FMT = new SimpleDateFormat("yyyy-MM-dd");
 
     //--
 
@@ -70,6 +71,9 @@ public class Main {
         List<String> rafNames;
         long firstTimestamp;
         FileNode dcim;
+        List<FileNode> dngs;
+        FileNode dest;
+        String path;
 
         directory("card", card);
         directory("dest", destDng);
@@ -85,10 +89,13 @@ public class Main {
             eject();
         }
         toDng(tmp, rafNames);
-        geotags(destDng, rafNames, firstTimestamp);
-
-        console.info.println("please import " + destDng + " into Lightroom (with 'card download' settings)");
-        console.info.println("and run bildersync to save some memory");
+        dngs = geotags(tmp, rafNames, firstTimestamp);
+        for (FileNode dng : dngs) {
+            path = PATH_FMT.format(new Date(dng.getLastModified()));
+            dest = destDng.join(path, dng.getName());
+            dest.getParent().mkdirsOpt();
+            dng.copyFile(dest);
+        }
     }
 
     private static List<Node> findRafs(FileNode dcim) throws IOException {
@@ -151,7 +158,6 @@ public class Main {
         console.info.println("converting " + rafNames.size() + " images");
         millis = System.currentTimeMillis();
         converter = new Launcher(working, "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter");
-        converter.arg("-d", destDng.getAbsolute());
         converter.args(rafNames);
         converter.exec(console.info);
         millis = System.currentTimeMillis() - millis;
@@ -181,10 +187,13 @@ public class Main {
         src.move(downloaded);
     }
 
-    private void geotags(FileNode dir, List<String> rafs, long firstTimestamp) throws IOException {
+    private List<FileNode> geotags(FileNode dir, List<String> rafs, long firstTimestamp) throws IOException {
         List<FileNode> tracks;
         Launcher launcher;
+        List<FileNode> result;
+        String name;
 
+        result = new ArrayList<>();
         tracks = new ArrayList<>();
         for (Node track : console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)").list()) {
             if (track.getName().endsWith(".gpx")) {
@@ -193,10 +202,6 @@ public class Main {
                 }
             }
         }
-        if (tracks.isEmpty()) {
-            console.info.println("no matching gpx files");
-            return;
-        }
         launcher = new Launcher(dir, "exiftool", "-overwrite_original");
         launcher.arg("-api", "GeoMaxIntSecs=43200"); // 12 Stunden, weil er keine neuen Punkte speichert, wenn man sich nicht bewegt
         for (FileNode track : tracks) {
@@ -204,9 +209,16 @@ public class Main {
             launcher.arg(track.getAbsolute());
         }
         for (String raf : rafs) {
-            launcher.arg(Strings.removeRight(raf, ".RAF") + ".dng");
+            name = Strings.removeRight(raf, ".RAF") + ".dng";
+            result.add(dir.join(name));
+            launcher.arg(name);
         }
-        console.info.println(launcher.toString());
-        launcher.exec(console.info);
+        if (tracks.isEmpty()) {
+            console.info.println("no matching gpx files");
+        } else {
+            console.info.println(launcher.toString());
+            launcher.exec(console.info);
+        }
+        return result;
     }
 }

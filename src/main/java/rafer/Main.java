@@ -74,10 +74,11 @@ public class Main {
     public void run() throws IOException {
         FileNode tmp;
         List<Node> srcRafs;
-        Map<String, Long> names;
+        List<String> names;
         long firstTimestamp;
         long lastTimestamp;
         FileNode dcim;
+        long timestamp;
 
         directory("card", card);
         directory("dest", destDng);
@@ -87,20 +88,22 @@ public class Main {
         dcim = card.join("DCIM");
         srcRafs = findRafs(dcim);
         names = download(srcRafs, tmp);
+        onCardBackup(dcim);
+        if (card.getParent().getName().equals("/Volumes")) {
+            eject();
+        }
+        toDng(tmp, names);
+        dates(tmp);
         firstTimestamp = Long.MAX_VALUE;
         lastTimestamp = Long.MIN_VALUE;
-        for (Long timestamp : names.values()) {
+        for (Node dng : tmp.find("*" + DNG)) {
+            timestamp = dng.getLastModified();
             firstTimestamp = Math.min(firstTimestamp, timestamp);
             lastTimestamp = Math.max(lastTimestamp, timestamp);
         }
         console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
-        onCardBackup(dcim);
-        if (card.getParent().getName().equals("/Volumes")) {
-            eject();
-        }
-        toDng(tmp, names.keySet());
-        geotags(tmp, names.keySet(), firstTimestamp);
+        geotags(tmp, names, firstTimestamp);
         copy(tmp, names);
         console.info.println("backup ...");
         backup(destDng, backup);
@@ -131,19 +134,18 @@ public class Main {
         }
     }
 
-    private void copy(FileNode srcDir, Map<String, Long> names) throws IOException {
-        String name;
+    private void copy(FileNode srcDir, List<String> names) throws IOException {
         FileNode src;
         FileNode dest;
 
-        for (Map.Entry<String, Long> entry : names.entrySet()) {
-            name = entry.getKey() + DNG;
+        for (String name : names) {
+            name = name + DNG;
             src = srcDir.join(name);
-            dest = destDng.join(FMT.format(new Date(entry.getValue())), name);
+            dest = destDng.join(FMT.format(src.getLastModified()), name);
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.copyFile(dest);
-            dest.setLastModified(entry.getValue());
+            dest.setLastModified(src.getLastModified());
         }
     }
 
@@ -180,19 +182,20 @@ public class Main {
     }
 
     /** @return names -> lastModified */
-    private Map<String, Long> download(List<Node> srcRafs, FileNode dest) throws IOException {
-        Map<String, Long> result;
+    private List<String> download(List<Node> srcRafs, FileNode dest) throws IOException {
+        List<String> result;
         String name;
         FileNode destRaf;
 
         console.info.println("downloading " + srcRafs.size() + " images to " + dest);
-        result = new HashMap<>(srcRafs.size());
+        result = new ArrayList<>(srcRafs.size());
         for (Node srcRaf : srcRafs) {
             destRaf = dest.join(srcRaf.getName());
             name = Strings.removeRight(destRaf.getName(), RAF);
-            if (result.put(name, srcRaf.getLastModified()) != null) {
+            if (result.contains(name)) {
                 throw new IOException("naming clash: " + name);
             }
+            result.add(name);
             srcRaf.copyFile(destRaf);
         }
         return result;
@@ -249,7 +252,7 @@ public class Main {
             }
         }
         launcher = new Launcher(dir, "exiftool", "-overwrite_original");
-        launcher.arg("-api", "GeoMaxIntSecs=43200"); // 12 Stunden, weil er keine neuen Punkte speichert, wenn man sich nicht bewegt
+        launcher.arg("-P", "-api", "GeoMaxIntSecs=43200"); // 12 Stunden, weil er keine neuen Punkte speichert, wenn man sich nicht bewegt
         for (FileNode track : tracks) {
             launcher.arg("-geotag");
             launcher.arg(track.getAbsolute());
@@ -263,5 +266,11 @@ public class Main {
             console.info.println(launcher.toString());
             launcher.exec(console.info);
         }
+    }
+    private void dates(FileNode dir) throws IOException {
+        Launcher launcher;
+
+        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", DNG);
+        launcher.exec(console.info);
     }
 }

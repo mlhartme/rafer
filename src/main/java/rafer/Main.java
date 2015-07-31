@@ -103,7 +103,7 @@ public class Main {
         }
         console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
-        geotags(tmp, names, firstTimestamp);
+        geotags(tmp, firstTimestamp);
         copy(tmp, names);
         console.info.println("backup ...");
         backup(destDng, backup);
@@ -239,7 +239,7 @@ public class Main {
         src.move(downloaded);
     }
 
-    private void geotags(FileNode dir, Collection<String> names, long firstTimestamp) throws IOException {
+    private void geotags(FileNode dir, long firstTimestamp) throws IOException {
         List<FileNode> tracks;
         Launcher launcher;
 
@@ -257,9 +257,8 @@ public class Main {
             launcher.arg("-geotag");
             launcher.arg(track.getAbsolute());
         }
-        for (String name : names) {
-            launcher.arg(name + DNG);
-        }
+        launcher.arg("-ext", DNG);
+        launcher.arg(".");
         if (tracks.isEmpty()) {
             console.info.println("no matching gpx files");
         } else {
@@ -267,6 +266,7 @@ public class Main {
             launcher.exec(console.info);
         }
     }
+
     private void dates(FileNode dir) throws IOException {
         Launcher launcher;
 

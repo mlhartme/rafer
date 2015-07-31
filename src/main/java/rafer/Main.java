@@ -11,10 +11,16 @@ import net.oneandone.sushi.util.Strings;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
+    public static final String RAF = ".RAF";
+    public static final String DNG = ".dng";
+
     public static void main(String[] args) {
         System.exit(run(args));
     }
@@ -68,12 +74,10 @@ public class Main {
     public void run() throws IOException {
         FileNode tmp;
         List<Node> srcRafs;
-        List<String> rafNames;
+        Map<String, Long> names;
         long firstTimestamp;
+        long lastTimestamp;
         FileNode dcim;
-        List<FileNode> dngs;
-        FileNode dest;
-        String path;
 
         directory("card", card);
         directory("dest", destDng);
@@ -82,19 +86,37 @@ public class Main {
 
         dcim = card.join("DCIM");
         srcRafs = findRafs(dcim);
-        rafNames = new ArrayList<>();
-        firstTimestamp = download(srcRafs, tmp, rafNames);
+        names = download(srcRafs, tmp);
+        firstTimestamp = Long.MAX_VALUE;
+        lastTimestamp = Long.MIN_VALUE;
+        for (Long timestamp : names.values()) {
+            firstTimestamp = Math.min(firstTimestamp, timestamp);
+            lastTimestamp = Math.max(lastTimestamp, timestamp);
+        }
+        console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
+                + FMT.format(new Date(lastTimestamp)));
         onCardBackup(dcim);
         if (card.getParent().getName().equals("/Volumes")) {
             eject();
         }
-        toDng(tmp, rafNames);
-        dngs = geotags(tmp, rafNames, firstTimestamp);
-        for (FileNode dng : dngs) {
-            path = PATH_FMT.format(new Date(dng.getLastModified()));
-            dest = destDng.join(path, dng.getName());
+        toDng(tmp, names.keySet());
+        geotags(tmp, names.keySet(), firstTimestamp);
+        copy(tmp, names);
+    }
+
+    private void copy(FileNode srcDir, Map<String, Long> names) throws IOException {
+        String name;
+        FileNode src;
+        FileNode dest;
+
+        for (Map.Entry<String, Long> entry : names.entrySet()) {
+            name = entry.getKey() + DNG;
+            src = srcDir.join(name);
+            dest = destDng.join(PATH_FMT.format(new Date(entry.getValue())), name);
             dest.getParent().mkdirsOpt();
-            dng.copyFile(dest);
+            dest.checkNotExists();
+            src.copyFile(dest);
+            dest.setLastModified(entry.getValue());
         }
     }
 
@@ -124,45 +146,39 @@ public class Main {
         }
     }
 
-    private long download(List<Node> srcRafs, FileNode dest, List<String> rafNames) throws IOException {
-        long firstTimestamp;
-        long lastTimestamp;
+    /** @return names -> lastModified */
+    private Map<String, Long> download(List<Node> srcRafs, FileNode dest) throws IOException {
+        Map<String, Long> result;
         String name;
         FileNode destRaf;
-        long timestamp;
 
         console.info.println("downloading " + srcRafs.size() + " images to " + dest);
-        firstTimestamp = Long.MAX_VALUE;
-        lastTimestamp = Long.MIN_VALUE;
+        result = new HashMap<>(srcRafs.size());
         for (Node srcRaf : srcRafs) {
-            name = srcRaf.getName();
-            if (!rafNames.add(name)) {
+            destRaf = dest.join(srcRaf.getName());
+            name = Strings.removeRight(destRaf.getName(), RAF);
+            if (result.put(name, srcRaf.getLastModified()) != null) {
                 throw new IOException("naming clash: " + name);
             }
-            destRaf = dest.join(name);
             srcRaf.copyFile(destRaf);
-            timestamp = srcRaf.getLastModified();
-            firstTimestamp = Math.min(firstTimestamp, timestamp);
-            lastTimestamp = Math.max(lastTimestamp, timestamp);
-            destRaf.setLastModified(timestamp);
         }
-        console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
-                + FMT.format(new Date(lastTimestamp)));
-        return firstTimestamp;
+        return result;
     }
 
-    private void toDng(FileNode working, List<String> rafNames) throws Failure {
+    private void toDng(FileNode working, Collection<String> names) throws Failure {
         long millis;
         Launcher converter;
 
-        console.info.println("converting " + rafNames.size() + " images");
+        console.info.println("converting " + names.size() + " images");
         millis = System.currentTimeMillis();
         converter = new Launcher(working, "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter");
-        converter.args(rafNames);
+        for (String name : names) {
+            converter.arg(name + RAF);
+        }
         converter.exec(console.info);
         millis = System.currentTimeMillis() - millis;
         millis = (millis + 500) / 1000;
-        console.info.println("(" + millis + "s, " + millis/rafNames.size() + "s/pic)");
+        console.info.println("(" + millis + "s, " + millis / names.size() + "s/pic)");
     }
 
     private void eject() {
@@ -187,13 +203,10 @@ public class Main {
         src.move(downloaded);
     }
 
-    private List<FileNode> geotags(FileNode dir, List<String> rafs, long firstTimestamp) throws IOException {
+    private void geotags(FileNode dir, Collection<String> names, long firstTimestamp) throws IOException {
         List<FileNode> tracks;
         Launcher launcher;
-        List<FileNode> result;
-        String name;
 
-        result = new ArrayList<>();
         tracks = new ArrayList<>();
         for (Node track : console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)").list()) {
             if (track.getName().endsWith(".gpx")) {
@@ -208,10 +221,8 @@ public class Main {
             launcher.arg("-geotag");
             launcher.arg(track.getAbsolute());
         }
-        for (String raf : rafs) {
-            name = Strings.removeRight(raf, ".RAF") + ".dng";
-            result.add(dir.join(name));
-            launcher.arg(name);
+        for (String name : names) {
+            launcher.arg(name + DNG);
         }
         if (tracks.isEmpty()) {
             console.info.println("no matching gpx files");
@@ -219,6 +230,5 @@ public class Main {
             console.info.println(launcher.toString());
             launcher.exec(console.info);
         }
-        return result;
     }
 }

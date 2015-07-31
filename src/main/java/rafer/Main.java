@@ -30,7 +30,7 @@ public class Main {
         Console console;
         FileNode card;
         FileNode dest;
-        FileNode tmp;
+        FileNode backup;
 
         world = new World();
         console = Console.create(world);
@@ -39,10 +39,10 @@ public class Main {
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        tmp = (FileNode) console.world.getHome().join("Downloads/card/raf");
         dest = (FileNode) console.world.getHome().join("Downloads/card/dng");
+        backup = (FileNode) console.world.getHome().join("Downloads/card/backup");
         try {
-            new Main(console, card, tmp, dest).run();
+            new Main(console, card, dest, backup).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -53,22 +53,21 @@ public class Main {
         }
     }
 
-    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss");
-    private static final SimpleDateFormat PATH_FMT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd");
 
     //--
 
     private final Console console;
     private final FileNode card;
     private final FileNode destDng;
-    private final FileNode tmpDir;
+    private final FileNode backup;
 
-    public Main(Console console, FileNode card, FileNode tmpDir, FileNode destDng) throws IOException {
+    public Main(Console console, FileNode card, FileNode destDng, FileNode backup) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
-        this.tmpDir = tmpDir;
         this.destDng = destDng;
+        this.backup = backup;
     }
 
     public void run() throws IOException {
@@ -81,8 +80,8 @@ public class Main {
 
         directory("card", card);
         directory("dest", destDng);
-        tmp = tmpDir.join(FMT.format(new Date()));
-        tmp.mkdir();
+        directory("backup", destDng);
+        tmp = console.world.getTemp().createTempDirectory();
 
         dcim = card.join("DCIM");
         srcRafs = findRafs(dcim);
@@ -102,6 +101,33 @@ public class Main {
         toDng(tmp, names.keySet());
         geotags(tmp, names.keySet(), firstTimestamp);
         copy(tmp, names);
+        console.info.println("backup ...");
+        backup(destDng, backup);
+        tmp.deleteTree();
+    }
+
+    private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
+        String path;
+
+        for (Node src : srcRoot.find("**/*" + DNG)) {
+            path = src.getRelative(srcRoot);
+            FileNode dest = destRoot.join(path);
+            if (!dest.exists()) {
+                dest.getParent().mkdirsOpt();
+                console.info.println("A " + destRoot.getName() + "/" + path);
+                src.copyFile(dest);
+                dest.setLastModified(src.getLastModified());
+            }
+        }
+
+        for (Node dest : destRoot.find("**/*" + DNG)) {
+            path = dest.getRelative(destRoot);
+            FileNode src = srcRoot.join(path);
+            if (!src.exists()) {
+                console.info.println("D " + destRoot.getName() + "/" + path);
+                dest.deleteFile();
+            }
+        }
     }
 
     private void copy(FileNode srcDir, Map<String, Long> names) throws IOException {
@@ -112,7 +138,7 @@ public class Main {
         for (Map.Entry<String, Long> entry : names.entrySet()) {
             name = entry.getKey() + DNG;
             src = srcDir.join(name);
-            dest = destDng.join(PATH_FMT.format(new Date(entry.getValue())), name);
+            dest = destDng.join(FMT.format(new Date(entry.getValue())), name);
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.copyFile(dest);

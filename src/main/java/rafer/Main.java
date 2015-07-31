@@ -20,6 +20,7 @@ import java.util.Map;
 public class Main {
     public static final String RAF = ".RAF";
     public static final String DNG = ".dng";
+    public static final String JPG = ".jpg";
 
     public static void main(String[] args) {
         System.exit(run(args));
@@ -146,8 +147,9 @@ public class Main {
         }
     }
 
-    private static List<Node> findRafs(FileNode dcim) throws IOException {
+    private List<Node> findRafs(FileNode dcim) throws IOException {
         List<Node> result;
+        String name;
 
         dcim.checkDirectory();
         result = dcim.find("**/*.RAF");
@@ -160,7 +162,12 @@ public class Main {
             } else if (other.getName().equals(".DS_Store")) {
                 // ignore
             } else if (!result.contains(other)) {
-                throw new IOException("unexpected file in image folder: " + other);
+                name = other.getName();
+                if (name.endsWith(JPG) && result.contains(other.getParent().join(Strings.removeRight(name, JPG) + RAF))) {
+                    console.info.println("ignoring sidecar jpg: " + other);
+                } else {
+                    throw new IOException("unexpected file in image folder: " + other);
+                }
             }
         }
         return result;

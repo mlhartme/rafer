@@ -5,7 +5,6 @@
 tell application "Image Events"
     launch
     set theImage to POSIX file "/Users/mhm/foo.dng"
-    set theJpg to POSIX file "/Users/mhm/foo.jpg"
     set theImageReference to open theImage
     tell theImageReference
        save in "/Users/mhm/foo.jpg" as JPEG

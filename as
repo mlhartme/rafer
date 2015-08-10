@@ -2,8 +2,7 @@ on run(arguments)
   tell application "Image Events"
     launch
     repeat with x in arguments
-      set img to x as text
-      set img to POSIX file img as alias
+      set img to POSIX file (x as text) as alias
       set out to "/Users/mhm/foo" & ".jpg"
       log "convert " & img & " -> " & out
       set r to open img

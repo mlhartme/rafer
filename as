@@ -4,11 +4,11 @@ on run(arguments)
     repeat with x in arguments
       set theImage to x as text
       set theImage to POSIX file theImage as alias
-      set out to ((x as text) & ".jpg")
+      set out to "/Users/mhm/foo" & ".jpg"
       log "convert " & theImage & " -> " & out
-      set theRef to open theImage
-      tell theRef
-        save in "/Users/mhm/foo.jpg" as JPEG
+      set r to open theImage
+      tell r
+        save in out as JPEG
       end tell
     end repeat
   end tell

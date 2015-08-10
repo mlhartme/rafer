@@ -6,8 +6,8 @@ on run(arguments)
       set theImage to POSIX file theImage as alias
       set out to ((x as text) & ".jpg")
       log "convert " & theImage & " -> " & out
-      set theImageReference to open theImage
-      tell theImageReference
+      set theRef to open theImage
+      tell theRef
         save in "/Users/mhm/foo.jpg" as JPEG
       end tell
     end repeat

@@ -3,8 +3,7 @@ on run(arguments)
     launch
     repeat with x in arguments
       set dng to POSIX file (x as text) as alias
-      set posixPath to POSIX path of dng
-      set jpg to posixPath & ".jpg"
+      set jpg to (POSIX path of dng) & ".jpg"
       log "convert " & dng & " -> " & jpg
       set dngRef to open dng
       tell dngRef

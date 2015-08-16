@@ -1,6 +1,7 @@
 package rafer;
 
 import net.oneandone.sushi.cli.Console;
+import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
@@ -32,6 +33,7 @@ public class Main {
         FileNode card;
         FileNode dest;
         FileNode backup;
+        FileNode fotostream;
 
         world = new World();
         console = Console.create(world);
@@ -42,8 +44,9 @@ public class Main {
         card = world.file("/Volumes/UNTITLED");
         dest = (FileNode) console.world.getHome().join("Downloads/card/dng");
         backup = (FileNode) console.world.getHome().join("Downloads/card/backup");
+        fotostream = (FileNode) console.world.getHome().join("Downloads/card/jpg");
         try {
-            new Main(console, card, dest, backup).run();
+            new Main(console, card, dest, backup, fotostream).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -62,13 +65,15 @@ public class Main {
     private final FileNode card;
     private final FileNode destDng;
     private final FileNode backup;
+    private final FileNode fotostream;
 
-    public Main(Console console, FileNode card, FileNode destDng, FileNode backup) throws IOException {
+    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode fotostream) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
         this.destDng = destDng;
         this.backup = backup;
+        this.fotostream = fotostream;
     }
 
     public void run() throws IOException {
@@ -83,6 +88,7 @@ public class Main {
         directory("card", card);
         directory("dest", destDng);
         directory("backup", destDng);
+        directory("fotostream", fotostream);
         tmp = console.world.getTemp().createTempDirectory();
 
         dcim = card.join("DCIM");
@@ -101,13 +107,29 @@ public class Main {
             firstTimestamp = Math.min(firstTimestamp, timestamp);
             lastTimestamp = Math.max(lastTimestamp, timestamp);
         }
-        console.info.println("done, images range from " + FMT.format(new Date(firstTimestamp)) + " to "
+        console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
         geotags(tmp, firstTimestamp);
-        copy(tmp, names);
+        copyToDest(tmp, names);
         console.info.println("backup ...");
         backup(destDng, backup);
+        console.info.println("foto stream ...");
+        fotostream(tmp, names);
         tmp.deleteTree();
+    }
+
+    private void fotostream(FileNode tmp, List<String> names) throws Failure, MoveException {
+        Launcher launcher;
+
+        launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/as");
+        for (String name : names) {
+            launcher.arg(tmp.join(name + DNG).getURI().toString());
+        }
+        console.info.println(launcher);
+        launcher.exec(console.info);
+        for (String name : names) {
+            tmp.join(name + DNG + JPG).move(fotostream.join(name + JPG));
+        }
     }
 
     private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
@@ -134,7 +156,7 @@ public class Main {
         }
     }
 
-    private void copy(FileNode srcDir, List<String> names) throws IOException {
+    private void copyToDest(FileNode srcDir, List<String> names) throws IOException {
         FileNode src;
         FileNode dest;
 

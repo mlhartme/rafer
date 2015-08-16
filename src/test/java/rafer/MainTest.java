@@ -23,6 +23,7 @@ public class MainTest {
         FileNode dest;
         FileNode rafs;
         FileNode backup;
+        FileNode fotostream;
 
         world = new World();
         home = world.guessProjectHome(MainTest.class);
@@ -37,8 +38,9 @@ public class MainTest {
             dng.getParent().join(Strings.removeRight(dng.getName(), Main.RAF) + ".jpg").mkfile();
         }
         backup = root.join("backup").mkdir();
+        fotostream = root.join("fotostream").mkdir();
         backup.join("foo.dng").mkfile();
-        main = new Main(Console.create(world), card, dest.mkdir(), backup);
+        main = new Main(Console.create(world), card, dest.mkdir(), backup, fotostream);
         main.run();
         assertEquals(rafs.list().size(), dest.find("**/*.dng").size());
     }

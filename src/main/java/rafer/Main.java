@@ -125,7 +125,7 @@ public class Main {
         for (String name : names) {
             launcher.arg(tmp.join(name + DNG).getURI().toString());
         }
-        console.info.println(launcher);
+        console.verbose.println(launcher);
         launcher.exec(console.info);
         for (String name : names) {
             tmp.join(name + DNG + JPG).move(fotostream.join(name + JPG));

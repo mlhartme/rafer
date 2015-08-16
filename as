@@ -9,6 +9,7 @@ on run(arguments)
       tell dngRef
         save in jpg as JPEG
       end tell
+      close dngRef
     end repeat
   end tell
 end run

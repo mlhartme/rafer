@@ -14,9 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Main {
     public static final String RAF = ".RAF";
@@ -37,13 +35,13 @@ public class Main {
 
         world = new World();
         console = Console.create(world);
-        if (args.length != 1) {
+        if (args.length != 0) {
             console.error.println("unexpected argument(s)");
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        dest = (FileNode) console.world.getHome().join("Downloads/card/dng");
-        backup = (FileNode) console.world.getHome().join("Downloads/card/backup");
+        dest = console.world.file("/Volumes/Data/Lightroom/2015");
+        backup = console.world.file("/Volumes/Bottich/Lightroom/2015");
         fotostream = (FileNode) console.world.getHome().join("Downloads/card/jpg");
         try {
             new Main(console, card, dest, backup, fotostream).run();
@@ -95,7 +93,7 @@ public class Main {
         srcRafs = findRafs(dcim);
         names = download(srcRafs, tmp);
         onCardBackup(dcim);
-        if (card.getParent().getName().equals("/Volumes")) {
+        if (card.getParent().getName().equals("Volumes")) {
             eject();
         }
         toDng(tmp, names);
@@ -123,7 +121,7 @@ public class Main {
 
         launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/as");
         for (String name : names) {
-            launcher.arg(tmp.join(name + DNG).getURI().toString());
+            launcher.arg(tmp.join(name + RAF).getURI().toString());
         }
         console.verbose.println(launcher);
         launcher.exec(console.info);

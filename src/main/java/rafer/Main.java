@@ -92,10 +92,13 @@ public class Main {
         dcim = card.join("DCIM");
         srcRafs = findRafs(dcim);
         names = download(srcRafs, tmp);
-        onCardBackup(dcim);
-        if (card.getParent().getName().equals("Volumes")) {
-            eject();
+        if (names.isEmpty()) {
+            console.info.println("no images");
+            ejectOpt();
+            return;
         }
+        onCardBackup(dcim);
+        ejectOpt();
         toDng(tmp, names);
         dates(tmp);
         firstTimestamp = Long.MAX_VALUE;
@@ -108,8 +111,9 @@ public class Main {
         console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to "
                 + FMT.format(new Date(lastTimestamp)));
         geotags(tmp, firstTimestamp);
+        console.info.println("storing at " + destDng + " ...");
         copyToDest(tmp, names);
-        console.info.println("backup ...");
+        console.info.println("backup to " + backup + " ...");
         backup(destDng, backup);
         console.info.println("foto stream ...");
         fotostream(tmp, names);
@@ -126,7 +130,7 @@ public class Main {
         console.verbose.println(launcher);
         launcher.exec(console.info);
         for (String name : names) {
-            tmp.join(name + DNG + JPG).move(fotostream.join(name + JPG));
+            tmp.join(name + RAF + JPG).move(fotostream.join(name + JPG));
         }
     }
 
@@ -235,6 +239,12 @@ public class Main {
         millis = System.currentTimeMillis() - millis;
         millis = (millis + 500) / 1000;
         console.info.println("(" + millis + "s, " + millis / names.size() + "s/pic)");
+    }
+
+    private void ejectOpt() {
+        if (card.getParent().getName().equals("Volumes")) {
+            eject();
+        }
     }
 
     private void eject() {

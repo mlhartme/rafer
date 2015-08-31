@@ -82,6 +82,7 @@ public class Main {
         long lastTimestamp;
         FileNode dcim;
         long timestamp;
+        Process process;
 
         directory("card", card);
         directory("dest", destDng);
@@ -97,27 +98,33 @@ public class Main {
             ejectOpt();
             return;
         }
-        onCardBackup(dcim);
-        ejectOpt();
-        toDng(tmp, names);
-        dates(tmp);
-        firstTimestamp = Long.MAX_VALUE;
-        lastTimestamp = Long.MIN_VALUE;
-        for (Node dng : tmp.find("*" + DNG)) {
-            timestamp = dng.getLastModified();
-            firstTimestamp = Math.min(firstTimestamp, timestamp);
-            lastTimestamp = Math.max(lastTimestamp, timestamp);
+        process = new ProcessBuilder("caffeinate").start();
+        try {
+            onCardBackup(dcim);
+            ejectOpt();
+            toDng(tmp, names);
+            dates(tmp);
+            firstTimestamp = Long.MAX_VALUE;
+            lastTimestamp = Long.MIN_VALUE;
+            for (Node dng : tmp.find("*" + DNG)) {
+                timestamp = dng.getLastModified();
+                firstTimestamp = Math.min(firstTimestamp, timestamp);
+                lastTimestamp = Math.max(lastTimestamp, timestamp);
+            }
+            console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to "
+                    + FMT.format(new Date(lastTimestamp)));
+            geotags(tmp, firstTimestamp);
+            console.info.println("storing at " + destDng + " ...");
+            copyToDest(tmp, names);
+            console.info.println("backup to " + backup + " ...");
+            backup(destDng, backup);
+            console.info.println("foto stream ...");
+            fotostream(tmp, names);
+            tmp.deleteTree();
+        } finally {
+            console.info.println("kill process " + process);
+            process.destroy();
         }
-        console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to "
-                + FMT.format(new Date(lastTimestamp)));
-        geotags(tmp, firstTimestamp);
-        console.info.println("storing at " + destDng + " ...");
-        copyToDest(tmp, names);
-        console.info.println("backup to " + backup + " ...");
-        backup(destDng, backup);
-        console.info.println("foto stream ...");
-        fotostream(tmp, names);
-        tmp.deleteTree();
     }
 
     private void fotostream(FileNode tmp, List<String> names) throws Failure, MoveException {

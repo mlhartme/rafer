@@ -24,6 +24,7 @@ public class MainTest {
         FileNode rafs;
         FileNode backup;
         FileNode fotostream;
+        FileNode gpxTracks;
 
         world = new World();
         home = world.guessProjectHome(MainTest.class);
@@ -39,8 +40,9 @@ public class MainTest {
         }
         backup = root.join("backup").mkdir();
         fotostream = root.join("fotostream").mkdir();
+        gpxTracks = root.join("gpxTracks").mkdir();
         backup.join("foo.dng").mkfile();
-        main = new Main(Console.create(world), card, dest.mkdir(), backup, fotostream);
+        main = new Main(Console.create(world), card, dest.mkdir(), backup, fotostream, gpxTracks);
         main.run();
         assertEquals(rafs.list().size(), dest.find("**/*.dng").size());
     }

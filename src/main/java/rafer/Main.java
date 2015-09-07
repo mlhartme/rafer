@@ -32,6 +32,7 @@ public class Main {
         FileNode dest;
         FileNode backup;
         FileNode fotostream;
+        FileNode gpxTracks;
 
         world = new World();
         console = Console.create(world);
@@ -43,8 +44,9 @@ public class Main {
         dest = console.world.file("/Volumes/Data/Lightroom/2015");
         backup = console.world.file("/Volumes/Bottich/Lightroom/2015");
         fotostream = (FileNode) console.world.getHome().join("Downloads/card/jpg");
+        gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/myTracks");
         try {
-            new Main(console, card, dest, backup, fotostream).run();
+            new Main(console, card, dest, backup, fotostream, gpxTracks).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -64,14 +66,16 @@ public class Main {
     private final FileNode destDng;
     private final FileNode backup;
     private final FileNode fotostream;
+    private final FileNode gpxTracks;
 
-    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode fotostream) throws IOException {
+    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode fotostream, FileNode gpxTracks) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
         this.destDng = destDng;
         this.backup = backup;
         this.fotostream = fotostream;
+        this.gpxTracks = gpxTracks;
     }
 
     public void run() throws IOException {
@@ -88,6 +92,7 @@ public class Main {
         directory("dest", destDng);
         directory("backup", destDng);
         directory("fotostream", fotostream);
+        directory("gpxTracks", gpxTracks);
         tmp = console.world.getTemp().createTempDirectory();
 
         dcim = card.join("DCIM");
@@ -281,7 +286,7 @@ public class Main {
         Launcher launcher;
 
         tracks = new ArrayList<>();
-        for (Node track : console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)").list()) {
+        for (Node track : gpxTracks.list()) {
             if (track.getName().endsWith(".gpx")) {
                 if (track.getLastModified() > firstTimestamp) {
                     tracks.add((FileNode) track);

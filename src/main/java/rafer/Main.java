@@ -19,7 +19,7 @@ import java.util.List;
 public class Main {
     public static final String RAF = ".RAF";
     public static final String DNG = ".dng";
-    public static final String JPG = ".jpg";
+    public static final String JPG = ".JPG";
 
     public static void main(String[] args) {
         System.exit(run(args));

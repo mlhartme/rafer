@@ -36,7 +36,7 @@ public class MainTest {
         rafs = home.join("src/test/rafs");
         rafs.copyDirectory(card.join("DCIM").mkdir());
         for (Node dng : card.find("**/*" + Main.RAF)) {
-            dng.getParent().join(Strings.removeRight(dng.getName(), Main.RAF) + ".jpg").mkfile();
+            dng.getParent().join(Strings.removeRight(dng.getName(), Main.RAF) + Main.JPG).mkfile();
         }
         backup = root.join("backup").mkdir();
         fotostream = root.join("fotostream").mkdir();

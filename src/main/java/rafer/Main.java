@@ -43,7 +43,7 @@ public class Main {
         card = world.file("/Volumes/UNTITLED");
         dest = console.world.file("/Volumes/Data/Lightroom/2015");
         backup = console.world.file("/Volumes/Bottich/Lightroom/2015");
-        fotostream = (FileNode) console.world.getHome().join("Downloads/card/jpg");
+        fotostream = (FileNode) console.world.getHome().join("Dropbox/Bilder");
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/myTracks");
         try {
             new Main(console, card, dest, backup, fotostream, gpxTracks).run();

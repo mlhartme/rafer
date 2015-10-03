@@ -55,8 +55,4 @@
       </plugin>
     </plugins>
   </build>  
-
-  <scm>
-    <tag>rafer-1.0.0</tag>
-  </scm>
 </project>

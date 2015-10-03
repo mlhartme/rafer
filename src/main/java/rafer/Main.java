@@ -59,7 +59,7 @@ public class Main {
         backup = console.world.file("/Volumes/Bottich/Lightroom/2015");
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
-            new Main(console, card, dest, backup, gpxTracks).run();
+            new Main(console, card, dest, backup, gpxTracks, true).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -79,14 +79,16 @@ public class Main {
     private final FileNode destDng;
     private final FileNode backup;
     private final FileNode gpxTracks;
+    private final boolean cloud;
 
-    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode gpxTracks) throws IOException {
+    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode gpxTracks, boolean cloud) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
         this.destDng = destDng;
         this.backup = backup;
         this.gpxTracks = gpxTracks;
+        this.cloud = cloud;
     }
 
     public void run() throws IOException {
@@ -128,12 +130,14 @@ public class Main {
             console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to "
                     + FMT.format(new Date(lastTimestamp)));
             geotags(tmp, firstTimestamp);
+            if (cloud) {
+                console.info.println("add to cloud ...");
+                cloud(tmp, pairs);
+            }
             console.info.println("storing at " + destDng + " ...");
             copyToDest(tmp, pairs);
             console.info.println("backup to " + backup + " ...");
             backup(destDng, backup);
-            console.info.println("foto stream ...");
-            fotostream(tmp, pairs);
             tmp.deleteTree();
         } finally {
             console.info.println("kill process " + process);
@@ -141,7 +145,7 @@ public class Main {
         }
     }
 
-    private void fotostream(FileNode tmp, List<String> names) throws Failure, MoveException {
+    private void cloud(FileNode tmp, List<String> names) throws Failure, MoveException {
         Launcher launcher;
 
         launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/addToCloud");

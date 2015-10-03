@@ -1,0 +1,17 @@
+on run(arguments)
+  set albumName to text returned of the result
+  set timeNow to time string of (current date)
+  set today to date string of (current date)
+  set albumName to "Rafer Import " & timeNow & " " & today
+  set imageList to {}
+  repeat with i from 1 to number of items in arguments
+    set this_item to item i of theFiles as alias
+    set the end of imageList to this_item
+  end repeat
+
+  tell application "Photos"
+    activate
+    delay 2
+    import imageList into (make new album named albumName) skip check duplicates yes
+  end tell
+end run

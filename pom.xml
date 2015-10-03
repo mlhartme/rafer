@@ -9,7 +9,7 @@
     <relativePath />
   </parent>
 
-  <groupId>rafer</groupId>
+  <groupId>net.oneandone.mlhartme</groupId>
   <artifactId>rafer</artifactId>
   <packaging>jar</packaging>
   <version>1.0.0</version>

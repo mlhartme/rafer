@@ -46,7 +46,6 @@ public class Main {
         FileNode card;
         FileNode dest;
         FileNode backup;
-        FileNode fotostream;
         FileNode gpxTracks;
 
         world = new World();
@@ -58,10 +57,9 @@ public class Main {
         card = world.file("/Volumes/UNTITLED");
         dest = console.world.file("/Volumes/Data/Lightroom/2015");
         backup = console.world.file("/Volumes/Bottich/Lightroom/2015");
-        fotostream = (FileNode) console.world.getHome().join("Dropbox/Bilder");
-        gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/myTracks");
+        gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
-            new Main(console, card, dest, backup, fotostream, gpxTracks).run();
+            new Main(console, card, dest, backup, gpxTracks).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -80,23 +78,20 @@ public class Main {
     private final FileNode card;
     private final FileNode destDng;
     private final FileNode backup;
-    private final FileNode fotostream;
     private final FileNode gpxTracks;
 
-    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode fotostream, FileNode gpxTracks) throws IOException {
+    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode gpxTracks) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
         this.destDng = destDng;
         this.backup = backup;
-        this.fotostream = fotostream;
         this.gpxTracks = gpxTracks;
     }
 
     public void run() throws IOException {
         FileNode tmp;
-        List<Node> srcRafs;
-        List<String> names;
+        List<String> pairs;
         long firstTimestamp;
         long lastTimestamp;
         FileNode dcim;
@@ -106,14 +101,13 @@ public class Main {
         directory("card", card);
         directory("dest", destDng);
         directory("backup", destDng);
-        directory("fotostream", fotostream);
         directory("gpxTracks", gpxTracks);
+
         tmp = console.world.getTemp().createTempDirectory();
 
         dcim = card.join("DCIM");
-        srcRafs = findRafs(dcim);
-        names = download(srcRafs, tmp);
-        if (names.isEmpty()) {
+        pairs = download(findRafs(dcim), tmp);
+        if (pairs.isEmpty()) {
             console.info.println("no images");
             ejectOpt();
             return;
@@ -122,7 +116,7 @@ public class Main {
         try {
             onCardBackup(dcim);
             ejectOpt();
-            toDng(tmp, names);
+            toDng(tmp, pairs);
             dates(tmp);
             firstTimestamp = Long.MAX_VALUE;
             lastTimestamp = Long.MIN_VALUE;
@@ -135,11 +129,11 @@ public class Main {
                     + FMT.format(new Date(lastTimestamp)));
             geotags(tmp, firstTimestamp);
             console.info.println("storing at " + destDng + " ...");
-            copyToDest(tmp, names);
+            copyToDest(tmp, pairs);
             console.info.println("backup to " + backup + " ...");
             backup(destDng, backup);
             console.info.println("foto stream ...");
-            fotostream(tmp, names);
+            fotostream(tmp, pairs);
             tmp.deleteTree();
         } finally {
             console.info.println("kill process " + process);
@@ -150,15 +144,12 @@ public class Main {
     private void fotostream(FileNode tmp, List<String> names) throws Failure, MoveException {
         Launcher launcher;
 
-        launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/as");
+        launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/addToCloud");
         for (String name : names) {
-            launcher.arg(tmp.join(name + RAF).getURI().toString());
+            launcher.arg(tmp.join(name + JPG).getURI().toString());
         }
         console.verbose.println(launcher);
         launcher.exec(console.info);
-        for (String name : names) {
-            tmp.join(name + RAF + JPG).move(fotostream.join(name + JPG));
-        }
     }
 
     private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
@@ -200,20 +191,26 @@ public class Main {
         }
     }
 
+    /** @return raf nodes with jpg sidecar */
     private List<Node> findRafs(FileNode dcim) throws IOException {
         List<Node> result;
         String name;
 
         dcim.checkDirectory();
         result = dcim.find("**/*.RAF");
+        for (Node raf : result) {
+            if (!jpg((FileNode) raf).exists()) {
+                throw new IOException("missing jpg for " + raf);
+            }
+        }
         if (result.isEmpty()) {
             throw new IOException("no images in " + dcim);
         }
         for (Node other : dcim.find("**/*")) {
             if (other.isDirectory()) {
                 // ignore
-            } else if (other.getName().equals(".DS_Store")) {
-                // ignore
+            } else if (other.getName().startsWith(".")) {
+                // ignore, e.g .DS_Store, .dropbox_device
             } else if (!result.contains(other)) {
                 name = other.getName();
                 if (name.endsWith(JPG) && result.contains(other.getParent().join(Strings.removeRight(name, JPG) + RAF))) {
@@ -232,7 +229,7 @@ public class Main {
         }
     }
 
-    /** @return names -> lastModified */
+    /** @return names or raf- and jpg pairs */
     private List<String> download(List<Node> srcRafs, FileNode dest) throws IOException {
         List<String> result;
         String name;
@@ -248,8 +245,13 @@ public class Main {
             }
             result.add(name);
             srcRaf.copyFile(destRaf);
+            jpg((FileNode) srcRaf).copyFile(jpg(destRaf));
         }
         return result;
+    }
+
+    private static FileNode jpg(FileNode raf) {
+        return raf.getParent().join(Strings.removeRight(raf.getName(), RAF) + JPG);
     }
 
     private void toDng(FileNode working, Collection<String> names) throws Failure {
@@ -315,6 +317,7 @@ public class Main {
             launcher.arg(track.getAbsolute());
         }
         launcher.arg("-ext", DNG);
+        launcher.arg("-ext", JPG);
         launcher.arg(".");
         if (tracks.isEmpty()) {
             console.info.println("no matching gpx files");

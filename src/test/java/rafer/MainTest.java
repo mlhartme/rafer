@@ -38,7 +38,6 @@ public class MainTest {
         FileNode dest;
         FileNode rafs;
         FileNode backup;
-        FileNode fotostream;
         FileNode gpxTracks;
 
         world = new World();
@@ -50,15 +49,11 @@ public class MainTest {
         dest = root.join("dest");
         rafs = home.join("src/test/rafs");
         rafs.copyDirectory(card.join("DCIM").mkdir());
-        for (Node dng : card.find("**/*" + Main.RAF)) {
-            dng.getParent().join(Strings.removeRight(dng.getName(), Main.RAF) + Main.JPG).mkfile();
-        }
         backup = root.join("backup").mkdir();
-        fotostream = root.join("fotostream").mkdir();
         gpxTracks = root.join("gpxTracks").mkdir();
         backup.join("foo.dng").mkfile();
-        main = new Main(Console.create(world), card, dest.mkdir(), backup, fotostream, gpxTracks);
+        main = new Main(Console.create(world), card, dest.mkdir(), backup, gpxTracks);
         main.run();
-        assertEquals(rafs.list().size(), dest.find("**/*.dng").size());
+        assertEquals(rafs.list().size() / 2, dest.find("**/*.dng").size());
     }
 }

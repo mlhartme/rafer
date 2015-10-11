@@ -6,5 +6,10 @@
         And create a jpg foto stream.
       </action>
     </release>
+    <release version="1.1.0">
+      <action date="2015-10-03" dev="mlhartme" type="update">
+        Removed dng conversion, it store raws now.
+      </action>
+    </release>
   </body>
 </document>

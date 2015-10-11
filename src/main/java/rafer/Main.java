@@ -28,8 +28,11 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
     public static final String RAF = ".RAF";
@@ -54,8 +57,8 @@ public class Main {
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        dest = console.world.file("/Volumes/Data/Lightroom/2015");
-        backup = console.world.file("/Volumes/Bottich/Lightroom/2015");
+        dest = console.world.file("/Volumes/Data/Pictures/2015");
+        backup = console.world.file("/Volumes/Bottich/Pictures/2015");
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
             new Main(console, card, dest, backup, gpxTracks, true).run();
@@ -70,6 +73,7 @@ public class Main {
     }
 
     private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
 
     //--
 
@@ -94,14 +98,15 @@ public class Main {
     public void run() throws IOException {
         FileNode tmp;
         List<String> pairs;
+        Collection<Long> values;
         long firstTimestamp;
         long lastTimestamp;
         FileNode dcim;
-        long timestamp;
         Process process;
+        Map<Node, Long> timestamps;
 
         directory("card", card);
-        directory("dest", raws);
+        directory("raws", raws);
         directory("backup", backup);
         directory("gpxTracks", gpxTracks);
 
@@ -118,17 +123,13 @@ public class Main {
         try {
             onCardBackup(dcim);
             ejectOpt();
-            dates(tmp);
-            firstTimestamp = Long.MAX_VALUE;
-            lastTimestamp = Long.MIN_VALUE;
-            for (Node dng : tmp.find("*" + RAF)) {
-                timestamp = dng.getLastModified();
-                firstTimestamp = Math.min(firstTimestamp, timestamp);
-                lastTimestamp = Math.max(lastTimestamp, timestamp);
-            }
-            console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to "
-                    + FMT.format(new Date(lastTimestamp)));
+            timestamps = timestamps(tmp);
+            values = timestamps.values();
+            firstTimestamp = Collections.min(values);
+            lastTimestamp = Collections.max(values);
+            console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to " + FMT.format(new Date(lastTimestamp)));
             geotags(tmp, firstTimestamp);
+            pairs = linkedNames(tmp, pairs, timestamps);
             if (cloud) {
                 console.info.println("add to cloud ...");
                 cloud(tmp, pairs);
@@ -142,6 +143,44 @@ public class Main {
             console.info.println("kill process " + process);
             process.destroy();
         }
+    }
+
+    private List<String> linkedNames(FileNode tmp, List<String> pairs, Map<Node, Long> timestamps) throws IOException {
+        List<String> result;
+        FileNode raf;
+        long timestamp;
+        String linked;
+
+        result = new ArrayList<>();
+        for (String pair : pairs) {
+            raf = tmp.join(pair + RAF);
+            timestamp = timestamps.get(raf);
+            linked = linked(pair, timestamp);
+            raf.move(tmp.join(linked + RAF));
+            result.add(linked);
+            tmp.join(pair + JPG).move(tmp.join(linked + JPG));
+        }
+        return result;
+    }
+
+    private String linked(String pair, long timestamp) {
+        String id;
+
+        id = Strings.removeLeft(pair, "DSCF");
+        return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
+    }
+
+    private Map<Node, Long> timestamps(FileNode tmp) throws IOException {
+        Map<Node, Long> result;
+        long timestamp;
+
+        dates(tmp);
+        result = new HashMap<>();
+        for (Node raw : tmp.find("*" + RAF)) {
+            timestamp = raw.getLastModified();
+            result.put(raw, timestamp);
+        }
+        return result;
     }
 
     private void cloud(FileNode tmp, List<String> names) throws Failure, MoveException {

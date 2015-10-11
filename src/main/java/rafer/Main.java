@@ -33,7 +33,6 @@ import java.util.List;
 
 public class Main {
     public static final String RAF = ".RAF";
-    public static final String DNG = ".dng";
     public static final String JPG = ".JPG";
 
     public static void main(String[] args) {
@@ -119,11 +118,10 @@ public class Main {
         try {
             onCardBackup(dcim);
             ejectOpt();
-            toDng(tmp, pairs);
             dates(tmp);
             firstTimestamp = Long.MAX_VALUE;
             lastTimestamp = Long.MIN_VALUE;
-            for (Node dng : tmp.find("*" + DNG)) {
+            for (Node dng : tmp.find("*" + RAF)) {
                 timestamp = dng.getLastModified();
                 firstTimestamp = Math.min(firstTimestamp, timestamp);
                 lastTimestamp = Math.max(lastTimestamp, timestamp);
@@ -160,7 +158,7 @@ public class Main {
     private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
         String path;
 
-        for (Node src : srcRoot.find("**/*" + DNG)) {
+        for (Node src : srcRoot.find("**/*" + RAF)) {
             path = src.getRelative(srcRoot);
             FileNode dest = destRoot.join(path);
             if (!dest.exists()) {
@@ -171,7 +169,7 @@ public class Main {
             }
         }
 
-        for (Node dest : destRoot.find("**/*" + DNG)) {
+        for (Node dest : destRoot.find("**/*" + RAF)) {
             path = dest.getRelative(destRoot);
             FileNode src = srcRoot.join(path);
             if (!src.exists()) {
@@ -186,7 +184,7 @@ public class Main {
         FileNode dest;
 
         for (String name : names) {
-            name = name + DNG;
+            name = name + RAF;
             src = srcDir.join(name);
             dest = raws.join(FMT.format(src.getLastModified()), name);
             dest.getParent().mkdirsOpt();
@@ -259,22 +257,6 @@ public class Main {
         return raf.getParent().join(Strings.removeRight(raf.getName(), RAF) + JPG);
     }
 
-    private void toDng(FileNode working, Collection<String> names) throws Failure {
-        long millis;
-        Launcher converter;
-
-        console.info.println("converting " + names.size() + " images");
-        millis = System.currentTimeMillis();
-        converter = new Launcher(working, "/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter");
-        for (String name : names) {
-            converter.arg(name + RAF);
-        }
-        converter.exec(console.info);
-        millis = System.currentTimeMillis() - millis;
-        millis = (millis + 500) / 1000;
-        console.info.println("(" + millis + "s, " + millis / names.size() + "s/pic)");
-    }
-
     private void ejectOpt() {
         if (card.getParent().getName().equals("Volumes")) {
             eject();
@@ -321,7 +303,7 @@ public class Main {
             launcher.arg("-geotag");
             launcher.arg(track.getAbsolute());
         }
-        launcher.arg("-ext", DNG);
+        launcher.arg("-ext", RAF);
         launcher.arg("-ext", JPG);
         launcher.arg(".");
         if (tracks.isEmpty()) {
@@ -335,7 +317,7 @@ public class Main {
     private void dates(FileNode dir) throws IOException {
         Launcher launcher;
 
-        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", DNG);
+        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", RAF);
         launcher.exec(console.info);
     }
 }

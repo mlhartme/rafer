@@ -61,7 +61,7 @@ public class Main {
         backup = console.world.file("/Volumes/Bottich/Pictures");
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
-            new Main(console, card, dest, backup, gpxTracks, false).run();
+            new Main(console, card, dest, backup, gpxTracks, true).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -240,7 +240,7 @@ public class Main {
             } else if (!result.contains(other)) {
                 name = other.getName();
                 if (name.endsWith(JPG) && result.contains(other.getParent().join(Strings.removeRight(name, JPG) + RAF))) {
-                    console.info.println("ignoring sidecar jpg: " + other);
+                    console.verbose.println("found sidecar jpg: " + other);
                 } else {
                     throw new IOException("unexpected file in image folder: " + other);
                 }

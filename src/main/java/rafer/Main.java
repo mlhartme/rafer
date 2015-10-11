@@ -57,11 +57,11 @@ public class Main {
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        dest = console.world.file("/Volumes/Data/Pictures/2015");
-        backup = console.world.file("/Volumes/Bottich/Pictures/2015");
+        dest = console.world.file("/Volumes/Data/Pictures");
+        backup = console.world.file("/Volumes/Bottich/Pictures");
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
-            new Main(console, card, dest, backup, gpxTracks, true).run();
+            new Main(console, card, dest, backup, gpxTracks, false).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -72,7 +72,7 @@ public class Main {
         }
     }
 
-    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy/MM/dd");
     private static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
 
     //--
@@ -97,13 +97,12 @@ public class Main {
 
     public void run() throws IOException {
         FileNode tmp;
-        List<String> pairs;
+        Map<String, Long> pairs;
         Collection<Long> values;
         long firstTimestamp;
         long lastTimestamp;
         FileNode dcim;
         Process process;
-        Map<Node, Long> timestamps;
 
         directory("card", card);
         directory("raws", raws);
@@ -113,8 +112,7 @@ public class Main {
         tmp = console.world.getTemp().createTempDirectory();
 
         dcim = card.join("DCIM");
-        pairs = download(findRafs(dcim), tmp);
-        if (pairs.isEmpty()) {
+        if (download(findRafs(dcim), tmp).isEmpty()) {
             console.info.println("no images");
             ejectOpt();
             return;
@@ -123,16 +121,15 @@ public class Main {
         try {
             onCardBackup(dcim);
             ejectOpt();
-            timestamps = timestamps(tmp);
-            values = timestamps.values();
+            pairs = timestamps(tmp);
+            values = pairs.values();
             firstTimestamp = Collections.min(values);
             lastTimestamp = Collections.max(values);
             console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to " + FMT.format(new Date(lastTimestamp)));
             geotags(tmp, firstTimestamp);
-            pairs = linkedNames(tmp, pairs, timestamps);
             if (cloud) {
                 console.info.println("add to cloud ...");
-                cloud(tmp, pairs);
+                cloud(tmp, pairs.keySet());
             }
             console.info.println("saving raws at " + raws + " ...");
             saveRaws(tmp, pairs);
@@ -145,20 +142,21 @@ public class Main {
         }
     }
 
-    private List<String> linkedNames(FileNode tmp, List<String> pairs, Map<Node, Long> timestamps) throws IOException {
-        List<String> result;
-        FileNode raf;
+    private Map<String, Long> timestamps(FileNode tmp) throws IOException {
+        Map<String, Long> result;
         long timestamp;
-        String linked;
+        String origName;
+        String linkedName;
 
-        result = new ArrayList<>();
-        for (String pair : pairs) {
-            raf = tmp.join(pair + RAF);
-            timestamp = timestamps.get(raf);
-            linked = linked(pair, timestamp);
-            raf.move(tmp.join(linked + RAF));
-            result.add(linked);
-            tmp.join(pair + JPG).move(tmp.join(linked + JPG));
+        dates(tmp);
+        result = new HashMap<>();
+        for (Node raf : tmp.find("*" + RAF)) {
+            timestamp = raf.getLastModified();
+            origName = Strings.removeRight(raf.getName(), RAF);
+            linkedName = linked(origName, timestamp);
+            result.put(linkedName, timestamp);
+            raf.move(tmp.join(linkedName + RAF));
+            tmp.join(origName + JPG).move(tmp.join(linkedName + JPG));
         }
         return result;
     }
@@ -170,20 +168,7 @@ public class Main {
         return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
-    private Map<Node, Long> timestamps(FileNode tmp) throws IOException {
-        Map<Node, Long> result;
-        long timestamp;
-
-        dates(tmp);
-        result = new HashMap<>();
-        for (Node raw : tmp.find("*" + RAF)) {
-            timestamp = raw.getLastModified();
-            result.put(raw, timestamp);
-        }
-        return result;
-    }
-
-    private void cloud(FileNode tmp, List<String> names) throws Failure, MoveException {
+    private void cloud(FileNode tmp, Collection<String> names) throws Failure, MoveException {
         Launcher launcher;
 
         launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/addToCloud");
@@ -192,6 +177,20 @@ public class Main {
         }
         console.verbose.println(launcher);
         launcher.exec(console.info);
+    }
+
+    private void saveRaws(FileNode srcDir, Map<String, Long> pairs) throws IOException {
+        FileNode src;
+        FileNode dest;
+
+        for (Map.Entry<String, Long> entry : pairs.entrySet()) {
+            src = srcDir.join(entry.getKey() + RAF);
+            dest = raws.join(FMT.format(entry.getValue()), src.getName());
+            dest.getParent().mkdirsOpt();
+            dest.checkNotExists();
+            src.copyFile(dest);
+            dest.setLastModified(entry.getValue());
+        }
     }
 
     private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
@@ -215,21 +214,6 @@ public class Main {
                 console.info.println("D " + destRoot.getName() + "/" + path);
                 dest.deleteFile();
             }
-        }
-    }
-
-    private void saveRaws(FileNode srcDir, List<String> names) throws IOException {
-        FileNode src;
-        FileNode dest;
-
-        for (String name : names) {
-            name = name + RAF;
-            src = srcDir.join(name);
-            dest = raws.join(FMT.format(src.getLastModified()), name);
-            dest.getParent().mkdirsOpt();
-            dest.checkNotExists();
-            src.copyFile(dest);
-            dest.setLastModified(src.getLastModified());
         }
     }
 

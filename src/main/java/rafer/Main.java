@@ -76,7 +76,8 @@ public class Main {
 
     private final Console console;
     private final FileNode card;
-    private final FileNode destDng;
+    // where to store raws
+    private final FileNode raws;
     private final FileNode backup;
     private final FileNode gpxTracks;
     private final boolean cloud;
@@ -85,7 +86,7 @@ public class Main {
         this.console = console;
         // no card, no fun
         this.card = card;
-        this.destDng = destDng;
+        this.raws = destDng;
         this.backup = backup;
         this.gpxTracks = gpxTracks;
         this.cloud = cloud;
@@ -101,8 +102,8 @@ public class Main {
         Process process;
 
         directory("card", card);
-        directory("dest", destDng);
-        directory("backup", destDng);
+        directory("dest", raws);
+        directory("backup", backup);
         directory("gpxTracks", gpxTracks);
 
         tmp = console.world.getTemp().createTempDirectory();
@@ -134,10 +135,10 @@ public class Main {
                 console.info.println("add to cloud ...");
                 cloud(tmp, pairs);
             }
-            console.info.println("storing at " + destDng + " ...");
-            copyToDest(tmp, pairs);
-            console.info.println("backup to " + backup + " ...");
-            backup(destDng, backup);
+            console.info.println("saving raws at " + raws + " ...");
+            saveRaws(tmp, pairs);
+            console.info.println("backup raws to " + backup + " ...");
+            backup(raws, backup);
             tmp.deleteTree();
         } finally {
             console.info.println("kill process " + process);
@@ -180,14 +181,14 @@ public class Main {
         }
     }
 
-    private void copyToDest(FileNode srcDir, List<String> names) throws IOException {
+    private void saveRaws(FileNode srcDir, List<String> names) throws IOException {
         FileNode src;
         FileNode dest;
 
         for (String name : names) {
             name = name + DNG;
             src = srcDir.join(name);
-            dest = destDng.join(FMT.format(src.getLastModified()), name);
+            dest = raws.join(FMT.format(src.getLastModified()), name);
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.copyFile(dest);

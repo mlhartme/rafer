@@ -72,8 +72,8 @@ public class Main {
         }
     }
 
-    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy/MM/dd");
-    private static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
+    public static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy/MM/dd");
+    public static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
 
     //--
 

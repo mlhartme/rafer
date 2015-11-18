@@ -12,6 +12,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.io.IOException;
+import java.util.List;
 
 public class Swing {
     private static void createAndShowGUI() {
@@ -27,6 +28,10 @@ public class Swing {
         dtl = new DropTargetListener() {
             @Override
             public void dragEnter(DropTargetDragEvent dtde) {
+                List lst;
+
+                lst = dtde.getCurrentDataFlavorsAsList();
+                System.out.println("list: " + lst);
             }
 
             @Override
@@ -58,14 +63,24 @@ public class Swing {
                 if (t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
                     dtde.acceptDrop(1);
                     try {
-                        System.out.println("transferable: " + dtde.getTransferable().getTransferData(DataFlavor.stringFlavor));
+                        System.out.println("string: " +t.getTransferData(DataFlavor.stringFlavor));
                     } catch (UnsupportedFlavorException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     dtde.dropComplete(true);
-                } else {
+                } else if (t.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+                    dtde.acceptDrop(1);
+                    try {
+                        System.out.println("string: " +t.getTransferData(DataFlavor.imageFlavor));
+                        } catch (UnsupportedFlavorException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        dtde.dropComplete(true);
+                    } else {
                     dtde.rejectDrop();
                 }
             }

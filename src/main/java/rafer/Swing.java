@@ -1,91 +1,55 @@
 package rafer;
 
 import javax.swing.*;
-import javax.swing.text.JTextComponent;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
+import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 public class Swing {
+
+    private static final DataFlavor TEXT = new DataFlavor("text/plain", "text/plain");
+    private static final DataFlavor IMAGE = new DataFlavor("image/png", "image/png");
     private static void createAndShowGUI() {
         JFrame frame;
-        JTextComponent label;
-        DropTargetListener dtl;
 
         frame = new JFrame("Rafer");
-        label = new JTextField("Welcome");
-        label.setDragEnabled(true);
-        label.setDropMode(DropMode.INSERT);
-        frame.getContentPane().add(label);
-        dtl = new DropTargetListener() {
-            @Override
-            public void dragEnter(DropTargetDragEvent dtde) {
-                List lst;
+        frame.setTransferHandler(new TransferHandler() {
+            public boolean canImport(TransferHandler.TransferSupport support) {
+                System.out.println("test: " + support.isDataFlavorSupported(IMAGE));
 
-                lst = dtde.getCurrentDataFlavorsAsList();
-                System.out.println("list: " + lst);
-            }
-
-            @Override
-            public void dragOver(DropTargetDragEvent dtde) {
-            }
-
-            @Override
-            public void dropActionChanged(DropTargetDragEvent dtde) {
-            }
-
-            @Override
-            public void dragExit(DropTargetEvent dte) {
-            }
-
-            @Override
-            public void drop(DropTargetDropEvent dtde) {
-                Transferable t;
-
-/*               System.out.println("drop " + dtde + " " + dtde.getDropAction());
-                if (dtde.getDropAction() != DnDConstants.ACTION_COPY) {
-                    dtde.rejectDrop();
-                    return;
+                for (DataFlavor data : support.getDataFlavors()) {
+                    System.out.println("data " + data.getHumanPresentableName());
                 }
-                System.out.println(dtde.getCurrentDataFlavorsAsList());*/
-                for (Object obj : dtde.getCurrentDataFlavorsAsList()) {
-                    System.out.println(obj.toString());
+                for (DataFlavor data : support.getTransferable().getTransferDataFlavors()) {
+                    System.out.println("data " + data.getHumanPresentableName());
                 }
-                t = dtde.getTransferable();
-                if (t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                    dtde.acceptDrop(1);
-                    try {
-                        System.out.println("string: " +t.getTransferData(DataFlavor.stringFlavor));
-                    } catch (UnsupportedFlavorException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    dtde.dropComplete(true);
-                } else if (t.isDataFlavorSupported(DataFlavor.imageFlavor)) {
-                    dtde.acceptDrop(1);
-                    try {
-                        System.out.println("string: " +t.getTransferData(DataFlavor.imageFlavor));
-                        } catch (UnsupportedFlavorException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        dtde.dropComplete(true);
-                    } else {
-                    dtde.rejectDrop();
-                }
+                support.setDropAction(COPY);
+                return true;
             }
-        };
-        frame.setDropTarget(new DropTarget(label, dtl));
+
+            public boolean importData(TransferHandler.TransferSupport support) {
+                if (!canImport(support)) {
+                    return false;
+                }
+                System.out.println("import");
+
+                Transferable t = support.getTransferable();
+
+                try {
+                    Object obj = t.getTransferData(IMAGE);
+                    System.out.println(obj);
+                } catch (UnsupportedFlavorException e) {
+                    return false;
+                } catch (IOException e) {
+                    return false;
+                }
+
+                return true;
+            }
+        });
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);

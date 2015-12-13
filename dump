@@ -1,0 +1,12 @@
+set outputFile to (("Macintosh HD:Users:mhm:") & "test.txt")
+try
+    set fileReference to open for access file outputFile with write permission
+    write "hello" to fileReference
+    close access fileReference
+on error
+    try
+        close access file outputFile
+    end try
+end try
+
+

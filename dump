@@ -1,4 +1,4 @@
-set outputFile to (("Macintosh HD:Users:mhm:Projects:foss:rafer:") & "test.txt")
+set outputFile to (("Veranda:Users:mhm:Projects:foss:rafer:") & "test.txt")
 try
     set fileReference to open for access file outputFile with write permission
     tell application "Photos"
@@ -6,8 +6,8 @@ try
          repeat with theItem in theseItems
              set title to the filename of theItem
              write (title as text) to fileReference
+             write "\n" to fileReference
          end repeat
-         write "end" to fileReference
     end tell
     close access fileReference
 on error

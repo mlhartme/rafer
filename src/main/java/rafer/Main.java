@@ -47,7 +47,7 @@ public class Main {
         Console console;
         FileNode card;
         FileNode dest;
-        FileNode backup;
+        List<FileNode> backups;
         FileNode gpxTracks;
 
         world = new World();
@@ -57,11 +57,13 @@ public class Main {
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        dest = console.world.file("/Volumes/Data/Pictures");
-        backup = console.world.file("/Volumes/Neuerkeller/Pictures");
+        dest = (FileNode) console.world.getHome().join("Pictures/Rafer");
+        backups = new ArrayList<>();
+        backups.add(console.world.file("/Volumes/Data/Rafer"));
+        backups.add(console.world.file("/Volumes/Neuerkeller/Rafer"));
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
-            new Main(console, card, dest, backup, gpxTracks, true).run();
+            new Main(console, card, dest, backups, gpxTracks, true).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -81,16 +83,17 @@ public class Main {
     private final FileNode card;
     // where to store raws
     private final FileNode raws;
-    private final FileNode backup;
+    private final List<FileNode> backups;
     private final FileNode gpxTracks;
     private final boolean cloud;
 
-    public Main(Console console, FileNode card, FileNode destDng, FileNode backup, FileNode gpxTracks, boolean cloud) throws IOException {
+    public Main(Console console, FileNode card, FileNode destDng, List<FileNode> backups,
+                FileNode gpxTracks, boolean cloud) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
         this.raws = destDng;
-        this.backup = backup;
+        this.backups = backups;
         this.gpxTracks = gpxTracks;
         this.cloud = cloud;
     }
@@ -106,19 +109,19 @@ public class Main {
 
         directory("card", card);
         directory("raws", raws);
-        directory("backup", backup);
+        directories("backup", backups);
         directory("gpxTracks", gpxTracks);
 
-        tmp = console.world.getTemp().createTempDirectory();
-
-        dcim = card.join("DCIM");
-        if (download(findRafs(dcim), tmp).isEmpty()) {
-            console.info.println("no images");
-            ejectOpt();
-            return;
-        }
         process = new ProcessBuilder("caffeinate").start();
         try {
+            tmp = console.world.getTemp().createTempDirectory();
+
+            dcim = card.join("DCIM");
+            if (download(findRafs(dcim), tmp).isEmpty()) {
+                console.info.println("no images");
+                ejectOpt();
+                return;
+            }
             onCardBackup(dcim);
             ejectOpt();
             pairs = timestamps(tmp);
@@ -133,11 +136,12 @@ public class Main {
             }
             console.info.println("saving raws at " + raws + " ...");
             saveRaws(tmp, pairs);
-            console.info.println("backup raws to " + backup + " ...");
-            backup(raws, backup);
+            for (FileNode backup : backups) {
+                console.info.println("backup raws to " + backup + " ...");
+                backup(raws, backup);
+            }
             tmp.deleteTree();
         } finally {
-            console.info.println("kill process " + process);
             process.destroy();
         }
     }
@@ -247,6 +251,12 @@ public class Main {
             }
         }
         return result;
+    }
+
+    private static void directories(String name, List<FileNode> dirs) throws IOException {
+        for (FileNode dir : dirs) {
+            directory(name, dir);
+        }
     }
 
     private static void directory(String name, FileNode dir) throws IOException {

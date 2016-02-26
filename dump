@@ -1,4 +1,4 @@
-set outputFile to (("Veranda:Users:mhm:Projects:foss:rafer:") & "test.txt")
+set outputFile to (("Macintosh HD:Users:mhm:Projects:foss:rafer:") & "test.txt")
 try
     set fileReference to open for access file outputFile with write permission
     tell application "Photos"

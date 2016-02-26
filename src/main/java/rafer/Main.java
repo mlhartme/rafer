@@ -321,6 +321,7 @@ public class Main {
             }
         }
         launcher = new Launcher(dir, "exiftool", "-overwrite_original");
+        launcher.arg("-Artist=Michael Hartmeier", "-Copyright=All rights reserved");
         launcher.arg("-P", "-api", "GeoMaxIntSecs=43200"); // 12 Stunden, weil er keine neuen Punkte speichert, wenn man sich nicht bewegt
         for (FileNode track : tracks) {
             launcher.arg("-geotag");

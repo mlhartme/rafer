@@ -26,7 +26,7 @@ public class Open {
         lst = dir.join("test.txt");
         lst.deleteFileOpt();
         dir.exec("osascript", "dump");
-        storeRoot = world.file("/Volumes/Data/Pictures");
+        storeRoot = (FileNode) world.getHome().join("Pictures/Rafer");
         iridient = dir.launcher("open", "-a", "Iridient Developer");
         for (String name : lst.readLines()) {
             date = Main.LINKED_FMT.parse(name.substring(1, 7));

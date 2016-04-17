@@ -130,12 +130,12 @@ public class Main {
             lastTimestamp = Collections.max(values);
             console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to " + FMT.format(new Date(lastTimestamp)));
             geotags(tmp, firstTimestamp);
+            console.info.println("saving raws at " + raws + " ...");
+            saveRaws(tmp, pairs);
             if (cloud) {
                 console.info.println("add to cloud ...");
                 cloud(tmp, pairs.keySet());
             }
-            console.info.println("saving raws at " + raws + " ...");
-            saveRaws(tmp, pairs);
             for (FileNode backup : backups) {
                 console.info.println("backup raws to " + backup + " ...");
                 backup(raws, backup);

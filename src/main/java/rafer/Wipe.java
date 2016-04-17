@@ -28,7 +28,7 @@ public class Wipe {
         FileNode raw;
 
         world = new World();
-        storeRoot = world.file("/Volumes/Data/Pictures");
+        storeRoot = (FileNode) world.getHome().join("Pictures/Rafer");
         mediathek = (FileNode) world.getHome().findOne("Pictures/*.photoslibrary");
         lines = Separator.RAW_LINE.split(mediathek.exec(FIND));
         System.out.println(lines.size());

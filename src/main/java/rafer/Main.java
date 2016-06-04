@@ -192,7 +192,7 @@ public class Main {
             dest = raws.join(FMT.format(entry.getValue()), src.getName());
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
-            src.copyFile(dest);
+            src.move(dest); // dont copy - disk might be full
             dest.setLastModified(entry.getValue());
         }
     }

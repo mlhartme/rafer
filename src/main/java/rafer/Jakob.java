@@ -46,6 +46,7 @@ public class Jakob {
         StringBuilder done;
         List<String> history;
         long start;
+        int end = 20;
 
         history = new ArrayList<>();
         done = new StringBuilder();
@@ -57,15 +58,15 @@ public class Jakob {
         richtig = 0;
         start = System.currentTimeMillis();
         while (true) {
-            console.info.println(done + dots(alles.size()));
+            console.info.println(done + dots(end - richtig));
             for (String h : history) {
                 console.info.println(h);
             }
-            if (alles.isEmpty()) {
+            if (richtig == end) {
                 break;
             }
             i = Math.abs(random.nextInt()) % alles.size();
-            aufgabe = alles.remove(i);
+            aufgabe = alles.get(i);
             str = console.readline(aufgabe.x + " * " + aufgabe.y + " = ").trim();
             try {
                 ergebnis = Integer.parseInt(str);
@@ -73,12 +74,13 @@ public class Jakob {
                 ergebnis = 0;
             }
             if (ergebnis == aufgabe.x * aufgabe.y) {
+                alles.remove(i);
                 richtig++;
                 done.append(ANSI_GREEN + "+" + ANSI_RESET);
                 history.add(aufgabe.x + " * " + aufgabe.y + " = " + ANSI_GREEN + ergebnis + ANSI_RESET);
             } else {
                 done.append(ANSI_RED + "-" + ANSI_RESET);
-                history.add(aufgabe.x + " * " + aufgabe.y + " = " + ANSI_RED + ergebnis + ANSI_RESET);
+                history.add(aufgabe.x + " * " + aufgabe.y + " = " + ANSI_RED + str + ANSI_RESET);
             }
             if (history.size() > 15) {
                 history.remove(0);
@@ -86,8 +88,8 @@ public class Jakob {
             console.info.print(ANSI_HOME + ANSI_DOWN + ANSI_ERASE_END);
         }
         console.info.println();
-        console.info.println("Du hast von " + count + " Aufgaben " + richtig + " richtig gerechnet!");
-        console.info.println("Dauer: " + ((System.currentTimeMillis() - start) / 1000) + " Sekunden.");
+        console.info.println("Du hast " + richtig + " richtige Aufgaben in "
+                + ((System.currentTimeMillis() - start) / 1000) + " Sekunden gerechnet :)");
     }
 
     private static String dots(int count) {
@@ -98,8 +100,8 @@ public class Jakob {
         List<Aufgabe> result;
 
         result = new ArrayList<>();
-        for (int x = 1; x <= 10; x++) {
-            for (int y = 2; y <= 9; y++) {
+        for (int x = 2; x <= 9; x++) {
+            for (int y = x + 1; y <= 9; y++) {
                 result.add(new Aufgabe(x, y));
             }
         }

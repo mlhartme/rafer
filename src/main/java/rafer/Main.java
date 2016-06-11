@@ -59,7 +59,7 @@ public class Main {
         card = world.file("/Volumes/UNTITLED");
         dest = (FileNode) console.world.getHome().join("Pictures/Rafer");
         backups = new ArrayList<>();
-        backups.add(console.world.file("/Volumes/Data/Bilder"));
+        backups.add(console.world.file("/Volumes/Data-1/Bilder"));
         backups.add(console.world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
@@ -172,10 +172,15 @@ public class Main {
         return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
-    private void cloud(FileNode tmp, Collection<String> names) throws Failure, MoveException {
+    private void cloud(FileNode tmp, Collection<String> names) throws IOException {
+        World world;
         Launcher launcher;
+        FileNode script;
 
-        launcher = tmp.launcher("osascript", "/Users/mhm/Projects/foss/rafer/addToCloud");
+        world = tmp.getWorld();
+        script = world.getTemp().createTempFile();
+        world.resource("addToCloud").copyFile(script);
+        launcher = tmp.launcher("osascript", script.getAbsolute());
         for (String name : names) {
             launcher.arg(tmp.join(name + JPG).getURI().toString());
         }

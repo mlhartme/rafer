@@ -22,7 +22,7 @@ public class Sort {
         FileNode origFile;
 
         world = new World();
-        origDir = (FileNode) world.file("/Volumes/Elements3T/Bilder");
+        origDir = world.file("/Volumes/Elements3T/Bilder");
         origDir.checkDirectory();
         root = (FileNode) world.getHome().join("Pictures/Sync");
         waste = root.getParent().join("waste");

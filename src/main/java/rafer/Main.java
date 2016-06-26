@@ -49,6 +49,7 @@ public class Main {
         FileNode dest;
         List<FileNode> backups;
         FileNode gpxTracks;
+        FileNode cloud;
 
         world = new World();
         console = Console.create(world);
@@ -62,8 +63,9 @@ public class Main {
         backups.add(console.world.file("/Volumes/Data/Bilder"));
         backups.add(console.world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
+        cloud = (FileNode) console.world.getHome().join("Google Drive/Bilder");
         try {
-            new Main(console, card, dest, backups, gpxTracks, true).run();
+            new Main(console, card, dest, backups, gpxTracks, cloud).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -85,10 +87,11 @@ public class Main {
     private final FileNode raws;
     private final List<FileNode> backups;
     private final FileNode gpxTracks;
-    private final boolean cloud;
+    // may be null
+    private final FileNode cloud;
 
     public Main(Console console, FileNode card, FileNode destDng, List<FileNode> backups,
-                FileNode gpxTracks, boolean cloud) throws IOException {
+                FileNode gpxTracks, FileNode cloud) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
@@ -111,6 +114,9 @@ public class Main {
         directory("raws", raws);
         directories("backup", backups);
         directory("gpxTracks", gpxTracks);
+        if (cloud != null) {
+            directory("cloud", cloud);
+        }
 
         process = new ProcessBuilder("caffeinate").start();
         try {
@@ -132,7 +138,7 @@ public class Main {
             geotags(tmp, firstTimestamp);
             console.info.println("saving raws at " + raws + " ...");
             saveRaws(tmp, pairs);
-            if (cloud) {
+            if (cloud != null) {
                 console.info.println("add to cloud ...");
                 cloud(tmp, pairs.keySet());
             }
@@ -173,19 +179,9 @@ public class Main {
     }
 
     private void cloud(FileNode tmp, Collection<String> names) throws IOException {
-        World world;
-        Launcher launcher;
-        FileNode script;
-
-        world = tmp.getWorld();
-        script = world.getTemp().createTempFile();
-        world.resource("addToCloud").copyFile(script);
-        launcher = tmp.launcher("osascript", script.getAbsolute());
         for (String name : names) {
-            launcher.arg(tmp.join(name + JPG).getURI().toString());
+            tmp.join(name + JPG).copyFile(cloud.join(name + JPG));
         }
-        console.verbose.println(launcher);
-        launcher.exec(console.info);
     }
 
     private void saveRaws(FileNode srcDir, Map<String, Long> pairs) throws IOException {

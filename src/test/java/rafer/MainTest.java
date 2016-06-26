@@ -53,7 +53,7 @@ public class MainTest {
         backup = root.join("backup").mkdir();
         gpxTracks = root.join("gpxTracks").mkdir();
         backup.join("foo.RAF").mkfile();
-        main = new Main(Console.create(world), card, dest.mkdir(), Collections.singletonList(backup), gpxTracks, false);
+        main = new Main(Console.create(world), card, dest.mkdir(), Collections.singletonList(backup), gpxTracks, null);
         main.run();
         assertEquals(rafs.list().size() / 2, dest.find("**/*.RAF").size());
     }

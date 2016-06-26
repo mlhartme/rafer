@@ -59,7 +59,7 @@ public class Main {
         card = world.file("/Volumes/UNTITLED");
         dest = (FileNode) console.world.getHome().join("Pictures/Rafer");
         backups = new ArrayList<>();
-        backups.add(console.world.file("/Volumes/Data-1/Bilder"));
+        backups.add(console.world.file("/Volumes/Data/Bilder"));
         backups.add(console.world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {

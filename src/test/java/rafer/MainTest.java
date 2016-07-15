@@ -36,25 +36,28 @@ public class MainTest {
         FileNode root;
         Main main;
         FileNode card;
-        FileNode dest;
-        FileNode rafs;
+        FileNode raws;
+        FileNode jpegs;
+        FileNode src;
         FileNode backup;
         FileNode gpxTracks;
 
         world = World.create();
         home = world.guessProjectHome(MainTest.class);
+        src = home.join("src/test/card");
         root = home.join("target/it");
         root.deleteTreeOpt();
         root.mkdirsOpt();
         card = root.join("card").mkdir();
-        dest = root.join("dest");
-        rafs = home.join("src/test/rafs");
-        rafs.copyDirectory(card.join("DCIM").mkdir());
+        src.copyDirectory(card.join("DCIM").mkdir());
+        raws = root.join("raws").mkdir();
+        jpegs = root.join("jpegs").mkdir();
         backup = root.join("backup").mkdir();
         gpxTracks = root.join("gpxTracks").mkdir();
         backup.join("foo.RAF").mkfile();
-        main = new Main(Console.create(), card, dest.mkdir(), Collections.singletonList(backup), gpxTracks, null);
+        main = new Main(Console.create(), card, raws, jpegs, Collections.singletonList(backup), gpxTracks);
         main.run();
-        assertEquals(rafs.list().size() / 2, dest.find("**/*.RAF").size());
+        assertEquals(src.list().size() / 2, raws.find("**/*.RAF").size());
+        assertEquals(src.list().size() / 2, jpegs.find("**/*.JPG").size());
     }
 }

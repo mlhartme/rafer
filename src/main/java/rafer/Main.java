@@ -46,7 +46,7 @@ public class Main {
         World world;
         Console console;
         FileNode card;
-        FileNode dest;
+        FileNode raws;
         List<FileNode> backups;
         FileNode gpxTracks;
         FileNode jpegs;
@@ -58,14 +58,14 @@ public class Main {
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        dest = world.getHome().join("Pictures/Rafer");
+        raws = world.getHome().join("Pictures/Rafer");
+        jpegs = world.getHome().join("Google Drive/Bilder");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
         backups.add(world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
-        jpegs = world.getHome().join("Google Drive/Bilder");
         try {
-            new Main(console, card, dest, backups, gpxTracks, jpegs).run();
+            new Main(console, card, raws, jpegs, backups, gpxTracks).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -91,16 +91,15 @@ public class Main {
     // may be null
     private final FileNode jpegs;
 
-    public Main(Console console, FileNode card, FileNode destDng, List<FileNode> backups,
-                FileNode gpxTracks, FileNode jpegs) throws IOException {
+    public Main(Console console, FileNode card, FileNode raws, FileNode jpegs, List<FileNode> backups,
+                FileNode gpxTracks) throws IOException {
         this.world = card.getWorld();
         this.console = console;
-        // no card, no fun
         this.card = card;
-        this.raws = destDng;
+        this.raws = raws;
+        this.jpegs = jpegs;
         this.backups = backups;
         this.gpxTracks = gpxTracks;
-        this.jpegs = jpegs;
     }
 
     public void run() throws IOException {
@@ -114,11 +113,9 @@ public class Main {
 
         directory("card", card);
         directory("raws", raws);
+        directory("jpegs", jpegs);
         directories("backup", backups);
         directory("gpxTracks", gpxTracks);
-        if (jpegs != null) {
-            directory("jpegs", jpegs);
-        }
 
         process = new ProcessBuilder("caffeinate").start();
         try {
@@ -140,10 +137,8 @@ public class Main {
             geotags(tmp, firstTimestamp);
             console.info.println("saving raws at " + raws + " ...");
             saveRaws(tmp, pairs);
-            if (jpegs != null) {
-                console.info.println("add to jpegs ...");
-                jpegs(tmp, pairs.keySet());
-            }
+            console.info.println("add to jpegs ...");
+            jpegs(tmp, pairs.keySet());
             for (FileNode backup : backups) {
                 console.info.println("backup raws to " + backup + " ...");
                 backup(raws, backup);

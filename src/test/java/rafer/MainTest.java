@@ -16,7 +16,7 @@
 package rafer;
 
 
-import net.oneandone.sushi.cli.Console;
+import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
@@ -41,7 +41,7 @@ public class MainTest {
         FileNode backup;
         FileNode gpxTracks;
 
-        world = new World();
+        world = World.create();
         home = world.guessProjectHome(MainTest.class);
         root = home.join("target/it");
         root.deleteTreeOpt();
@@ -53,7 +53,7 @@ public class MainTest {
         backup = root.join("backup").mkdir();
         gpxTracks = root.join("gpxTracks").mkdir();
         backup.join("foo.RAF").mkfile();
-        main = new Main(Console.create(world), card, dest.mkdir(), Collections.singletonList(backup), gpxTracks, null);
+        main = new Main(Console.create(), card, dest.mkdir(), Collections.singletonList(backup), gpxTracks, null);
         main.run();
         assertEquals(rafs.list().size() / 2, dest.find("**/*.RAF").size());
     }

@@ -15,7 +15,7 @@
  */
 package rafer;
 
-import net.oneandone.sushi.cli.Console;
+import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
@@ -38,11 +38,11 @@ public class Main {
     public static final String RAF = ".RAF";
     public static final String JPG = ".JPG";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         System.exit(run(args));
     }
 
-    public static int run(String ... args) {
+    public static int run(String ... args) throws IOException {
         World world;
         Console console;
         FileNode card;
@@ -51,19 +51,19 @@ public class Main {
         FileNode gpxTracks;
         FileNode jpegs;
 
-        world = new World();
-        console = Console.create(world);
+        world = World.create();
+        console = Console.create();
         if (args.length != 0) {
             console.error.println("unexpected argument(s)");
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        dest = (FileNode) console.world.getHome().join("Pictures/Rafer");
+        dest = world.getHome().join("Pictures/Rafer");
         backups = new ArrayList<>();
-        backups.add(console.world.file("/Volumes/Data/Bilder"));
-        backups.add(console.world.file("/Volumes/Elements3T/Bilder"));
-        gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
-        jpegs = (FileNode) console.world.getHome().join("Google Drive/Bilder");
+        backups.add(world.file("/Volumes/Data/Bilder"));
+        backups.add(world.file("/Volumes/Elements3T/Bilder"));
+        gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
+        jpegs = world.getHome().join("Google Drive/Bilder");
         try {
             new Main(console, card, dest, backups, gpxTracks, jpegs).run();
             return 0;
@@ -81,6 +81,7 @@ public class Main {
 
     //--
 
+    private final World world;
     private final Console console;
     private final FileNode card;
     // where to store raws
@@ -92,6 +93,7 @@ public class Main {
 
     public Main(Console console, FileNode card, FileNode destDng, List<FileNode> backups,
                 FileNode gpxTracks, FileNode jpegs) throws IOException {
+        this.world = card.getWorld();
         this.console = console;
         // no card, no fun
         this.card = card;
@@ -120,7 +122,7 @@ public class Main {
 
         process = new ProcessBuilder("caffeinate").start();
         try {
-            tmp = console.world.getTemp().createTempDirectory();
+            tmp = world.getTemp().createTempDirectory();
 
             dcim = card.join("DCIM");
             if (download(findRafs(dcim), tmp).isEmpty()) {
@@ -228,8 +230,8 @@ public class Main {
     }
 
     /** @return raf nodes with jpg sidecar */
-    private List<Node> findRafs(FileNode dcim) throws IOException {
-        List<Node> result;
+    private List<FileNode> findRafs(FileNode dcim) throws IOException {
+        List<FileNode> result;
         String name;
 
         dcim.checkDirectory();
@@ -272,7 +274,7 @@ public class Main {
     }
 
     /** @return names or raf- and jpg pairs */
-    private List<String> download(List<Node> srcRafs, FileNode dest) throws IOException {
+    private List<String> download(List<FileNode> srcRafs, FileNode dest) throws IOException {
         List<String> result;
         String name;
         FileNode destRaf;

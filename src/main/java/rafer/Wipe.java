@@ -27,9 +27,9 @@ public class Wipe {
         List<FileNode> remove;
         FileNode raw;
 
-        world = new World();
-        storeRoot = (FileNode) world.getHome().join("Pictures/Rafer");
-        mediathek = (FileNode) world.getHome().findOne("Pictures/*.photoslibrary");
+        world = World.create();
+        storeRoot = world.getHome().join("Pictures/Rafer");
+        mediathek = world.getHome().findOne("Pictures/*.photoslibrary");
         lines = Separator.RAW_LINE.split(mediathek.exec(FIND));
         System.out.println(lines.size());
         storeNames = new ArrayList<>();

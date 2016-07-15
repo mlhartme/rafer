@@ -16,9 +16,7 @@
 package rafer;
 
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
-import net.oneandone.sushi.fs.NodeNotFoundException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.launcher.Launcher;
@@ -82,6 +80,8 @@ public class Main {
     public static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy/MM/dd");
     public static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
 
+    private static final String STARTED = new SimpleDateFormat("yyMMdd-hhmmss").format(new Date());
+
     //--
 
     private final World world;
@@ -93,10 +93,10 @@ public class Main {
     private final FileNode gpxTracks;
     // may be null
     private final FileNode jpegs;
-    private final FileNode trash;
+    private final FileNode inboxTrash;
 
     public Main(Console console, FileNode card, FileNode rafs, FileNode jpegs, List<FileNode> backups,
-                FileNode gpxTracks, FileNode trash) throws IOException {
+                FileNode gpxTracks, FileNode inboxTrash) throws IOException {
         this.world = card.getWorld();
         this.console = console;
         this.card = card;
@@ -104,7 +104,7 @@ public class Main {
         this.jpegs = jpegs;
         this.backups = backups;
         this.gpxTracks = gpxTracks;
-        this.trash = trash;
+        this.inboxTrash = inboxTrash;
     }
 
     public void run() throws IOException {
@@ -116,7 +116,6 @@ public class Main {
         backupCount = 0;
         directory("rafs", rafs);
         directory("jpegs", jpegs);
-        directory("trash", trash);
         process = new ProcessBuilder("caffeinate").start();
         try {
             if (card.isDirectory()) {
@@ -161,7 +160,7 @@ public class Main {
             raf = getRaf(name, rafs);
             if (!raf.exists()) {
                 console.info.println("D " + name);
-                trash(jpeg);
+                inboxTrash(jpeg);
             }
         }
     }
@@ -173,13 +172,28 @@ public class Main {
             name = raf.getName();
             if (!getJpg(name, jpegs).exists()) {
                 console.info.println("D " + name);
-                trash(raf);
+                inboxTrash(raf);
             }
         }
     }
 
-    private void trash(FileNode file) throws IOException {
-        file.move(trash.join(file.getName()));
+    private void inboxTrash(FileNode file) throws IOException {
+        FileNode dir;
+
+        inboxTrash.mkdirOpt();
+        dir = inboxTrash.join(STARTED);
+        dir.mkdirOpt();
+        file.move(dir.join(file.getName()));
+    }
+
+    private void backupTrash(FileNode root, FileNode file) throws IOException {
+        FileNode dir;
+
+        dir = root.getParent().join(".trash." + root.getName());
+        dir.mkdirOpt();
+        dir = dir.join(STARTED);
+        dir.mkdirOpt();
+        file.move(dir.join(file.getName()));
     }
 
     private static FileNode getRaf(String name, FileNode root) {
@@ -307,13 +321,13 @@ public class Main {
             }
         }
 
-        for (Node dest : destRoot.find("**/*" + RAF)) {
+        for (FileNode dest : destRoot.find("**/*" + RAF)) {
             path = dest.getRelative(destRoot);
             FileNode src = srcRoot.join(path);
             if (!src.exists()) {
                 if (src.getParent().exists()) {
                     console.info.println("D " + destRoot.getName() + "/" + path);
-                    dest.deleteFile();
+                    backupTrash(destRoot, dest);
                 } else {
                     // e.g. if src only contains the current year, but the backups hold all the years
                     console.verbose.println("not synced: " + src.getParent());

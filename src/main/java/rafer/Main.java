@@ -23,6 +23,7 @@ import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,7 +45,7 @@ public class Main {
         World world;
         Console console;
         FileNode card;
-        FileNode raws;
+        FileNode rafs;
         List<FileNode> backups;
         FileNode gpxTracks;
         FileNode jpegs;
@@ -56,14 +57,14 @@ public class Main {
             return 1;
         }
         card = world.file("/Volumes/UNTITLED");
-        raws = world.getHome().join("Pictures/Rafer");
+        rafs = world.getHome().join("Pictures/Rafer");
         jpegs = world.getHome().join("Google Drive/Bilder");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
         backups.add(world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         try {
-            new Main(console, card, raws, jpegs, backups, gpxTracks).run();
+            new Main(console, card, rafs, jpegs, backups, gpxTracks).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -82,19 +83,19 @@ public class Main {
     private final World world;
     private final Console console;
     private final FileNode card;
-    // where to store raws
-    private final FileNode raws;
+    // where to store rafs
+    private final FileNode rafs;
     private final List<FileNode> backups;
     private final FileNode gpxTracks;
     // may be null
     private final FileNode jpegs;
 
-    public Main(Console console, FileNode card, FileNode raws, FileNode jpegs, List<FileNode> backups,
+    public Main(Console console, FileNode card, FileNode rafs, FileNode jpegs, List<FileNode> backups,
                 FileNode gpxTracks) throws IOException {
         this.world = card.getWorld();
         this.console = console;
         this.card = card;
-        this.raws = raws;
+        this.rafs = rafs;
         this.jpegs = jpegs;
         this.backups = backups;
         this.gpxTracks = gpxTracks;
@@ -107,7 +108,7 @@ public class Main {
 
         cardCount = 0;
         backupCount = 0;
-        directory("raws", raws);
+        directory("rafs", rafs);
         directory("jpegs", jpegs);
         process = new ProcessBuilder("caffeinate").start();
         try {
@@ -117,11 +118,12 @@ public class Main {
             } else {
                 console.info.println("no card");
             }
+            jpegWipe();
             for (FileNode backup : backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
-                    console.info.println("backup raws to " + backup + " ...");
-                    backup(raws, backup);
+                    console.info.println("backup rafs to " + backup + " ...");
+                    backup(rafs, backup);
                 } else {
                     console.info.println("backup not available: " + backup);
                 }
@@ -131,6 +133,49 @@ public class Main {
         } finally {
             process.destroy();
         }
+    }
+
+    public void jpegWipe() throws IOException {
+        String name;
+        FileNode raf;
+
+        console.info.println("jpeg wipe ...");
+        for (FileNode jpeg : jpegs.list()) {
+            name = jpeg.getName();
+            if (!name.endsWith(JPG)) {
+                continue;
+            }
+            raf = getRaf(name, rafs);
+            if (!raf.exists()) {
+                console.info.println("D " + name);
+                jpeg.deleteFile();
+            }
+        }
+        console.info.println("done");
+    }
+
+    private static FileNode getRaf(String name, FileNode root) {
+        Date date;
+
+        if (!name.startsWith("r") || name.indexOf('x') != 7) {
+            throw new IllegalArgumentException();
+        }
+        try {
+            date = LINKED_FMT.parse(name.substring(1, 7));
+        } catch (ParseException e) {
+            throw new IllegalStateException(name + ": " + e.getMessage());
+        }
+        return root.join(Main.FMT.format(date)).join(removeExtension(name) + RAF);
+    }
+
+    private static String removeExtension(String str) {
+        int idx;
+
+        idx = str.lastIndexOf('.');
+        if (idx == -1) {
+            throw new IllegalArgumentException(str);
+        }
+        return str.substring(0, idx);
     }
 
     public void card() throws IOException {
@@ -161,8 +206,8 @@ public class Main {
         geotags(tmp, firstTimestamp);
         console.info.println("saving jpegs at " + jpegs + " ...");
         moveJpegs(tmp, pairs.keySet());
-        console.info.println("saving raws at " + raws + " ...");
-        moveRaws(tmp, pairs);
+        console.info.println("saving rafs at " + rafs + " ...");
+        moveRafs(tmp, pairs);
         tmp.deleteDirectory(); // it's empty now
     }
 
@@ -198,13 +243,13 @@ public class Main {
         }
     }
 
-    private void moveRaws(FileNode srcDir, Map<String, Long> pairs) throws IOException {
+    private void moveRafs(FileNode srcDir, Map<String, Long> pairs) throws IOException {
         FileNode src;
         FileNode dest;
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = srcDir.join(entry.getKey() + RAF);
-            dest = raws.join(FMT.format(entry.getValue()), src.getName());
+            dest = rafs.join(FMT.format(entry.getValue()), src.getName());
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.move(dest); // dont copy - disk might be full
@@ -236,7 +281,7 @@ public class Main {
                     dest.deleteFile();
                 } else {
                     // e.g. if src only contains the current year, but the backups hold all the years
-                    console.info.println("not synced: " + src.getParent());
+                    console.verbose.println("not synced: " + src.getParent());
                 }
             }
         }

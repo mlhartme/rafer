@@ -2,10 +2,10 @@
 
 ### 1.1.0 
 
+* Removed dng conversion, Rafer stores raf and jpg now.
 * You can run rafer without a card and/or without available backups now.
 * Store artist and copyright.
 * Multiple backup directories.
-* Removed dng conversion, it stores raws now.
 
 ### 1.0.0 (2015-10-03)
 

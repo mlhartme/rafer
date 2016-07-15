@@ -19,6 +19,7 @@ Tracking tools Know how:
 
 ## Directories
 
-* Raws: where to store recent raws - I use a local drive for this
+* Ravs: where to store recent rafs - I use a local drive for this
 * Jpegs: where to store recent jpegs - I use Google Drive or Dropbox for this
-* Backups: where to permanently store raws and jpegs. Includes everything from raws and jpegs
+* Backups: where to permanently store ravs and jpegs. 
+  Includes everything from rafs and jpegs, thus, rafs and jpegs are kind of an inbox

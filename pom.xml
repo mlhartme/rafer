@@ -4,8 +4,8 @@
 
   <parent>
     <groupId>net.oneandone.maven.poms</groupId>
-    <artifactId>foss-parent</artifactId>
-    <version>1.5.9</version>
+    <artifactId>lazy-foss-parent</artifactId>
+    <version>1.0.1</version>
     <relativePath />
   </parent>
 
@@ -45,7 +45,7 @@
       <plugin>
         <groupId>net.oneandone.maven.plugins</groupId>
         <artifactId>application</artifactId>
-        <version>1.5.2</version>
+        <version>1.6.0</version>
         <configuration>
           <name>rafer</name>
           <main>rafer.Main</main>

@@ -16,7 +16,9 @@
 package rafer;
 
 import net.oneandone.inline.Console;
+import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
+import net.oneandone.sushi.fs.NodeNotFoundException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.launcher.Launcher;
@@ -49,6 +51,7 @@ public class Main {
         List<FileNode> backups;
         FileNode gpxTracks;
         FileNode jpegs;
+        FileNode trash;
 
         world = World.create();
         console = Console.create();
@@ -63,8 +66,9 @@ public class Main {
         backups.add(world.file("/Volumes/Data/Bilder"));
         backups.add(world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
+        trash = world.getHome().join(".trash/rafer").mkdirOpt();
         try {
-            new Main(console, card, rafs, jpegs, backups, gpxTracks).run();
+            new Main(console, card, rafs, jpegs, backups, gpxTracks, trash).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -89,9 +93,10 @@ public class Main {
     private final FileNode gpxTracks;
     // may be null
     private final FileNode jpegs;
+    private final FileNode trash;
 
     public Main(Console console, FileNode card, FileNode rafs, FileNode jpegs, List<FileNode> backups,
-                FileNode gpxTracks) throws IOException {
+                FileNode gpxTracks, FileNode trash) throws IOException {
         this.world = card.getWorld();
         this.console = console;
         this.card = card;
@@ -99,6 +104,7 @@ public class Main {
         this.jpegs = jpegs;
         this.backups = backups;
         this.gpxTracks = gpxTracks;
+        this.trash = trash;
     }
 
     public void run() throws IOException {
@@ -110,6 +116,7 @@ public class Main {
         backupCount = 0;
         directory("rafs", rafs);
         directory("jpegs", jpegs);
+        directory("trash", trash);
         process = new ProcessBuilder("caffeinate").start();
         try {
             if (card.isDirectory()) {
@@ -118,7 +125,7 @@ public class Main {
             } else {
                 console.info.println("no card");
             }
-            jpegWipe();
+            inboxSync();
             for (FileNode backup : backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
@@ -135,11 +142,17 @@ public class Main {
         }
     }
 
-    public void jpegWipe() throws IOException {
+    public void inboxSync() throws IOException {
+        console.info.println("inbox sync ...");
+        wipeJpeg();
+        wipeRaf();
+        console.info.println("done");
+    }
+
+    public void wipeJpeg() throws IOException {
         String name;
         FileNode raf;
 
-        console.info.println("jpeg wipe ...");
         for (FileNode jpeg : jpegs.list()) {
             name = jpeg.getName();
             if (!name.endsWith(JPG)) {
@@ -148,10 +161,25 @@ public class Main {
             raf = getRaf(name, rafs);
             if (!raf.exists()) {
                 console.info.println("D " + name);
-                jpeg.deleteFile();
+                trash(jpeg);
             }
         }
-        console.info.println("done");
+    }
+
+    public void wipeRaf() throws IOException {
+        String name;
+
+        for (FileNode raf : rafs.find("**/*.RAF")) {
+            name = raf.getName();
+            if (!getJpg(name, jpegs).exists()) {
+                console.info.println("D " + name);
+                trash(raf);
+            }
+        }
+    }
+
+    private void trash(FileNode file) throws IOException {
+        file.move(trash.join(file.getName()));
     }
 
     private static FileNode getRaf(String name, FileNode root) {
@@ -166,6 +194,13 @@ public class Main {
             throw new IllegalStateException(name + ": " + e.getMessage());
         }
         return root.join(Main.FMT.format(date)).join(removeExtension(name) + RAF);
+    }
+
+    private static FileNode getJpg(String name, FileNode root) {
+        if (!name.startsWith("r") || name.indexOf('x') != 7) {
+            throw new IllegalArgumentException();
+        }
+        return root.join(removeExtension(name) + JPG);
     }
 
     private static String removeExtension(String str) {

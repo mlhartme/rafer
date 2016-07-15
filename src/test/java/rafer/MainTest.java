@@ -41,6 +41,7 @@ public class MainTest {
         FileNode src;
         FileNode backup;
         FileNode gpxTracks;
+        FileNode trash;
 
         world = World.create();
         home = world.guessProjectHome(MainTest.class);
@@ -54,8 +55,9 @@ public class MainTest {
         jpegs = root.join("jpegs").mkdir();
         backup = root.join("backup").mkdir();
         gpxTracks = root.join("gpxTracks").mkdir();
+        trash = root.join("trash").mkdir();
         backup.join("foo.RAF").mkfile();
-        main = new Main(Console.create(), card, raws, jpegs, Collections.singletonList(backup), gpxTracks);
+        main = new Main(Console.create(), card, raws, jpegs, Collections.singletonList(backup), gpxTracks, trash);
         main.run();
         assertEquals(src.list().size() / 2, raws.find("**/*.RAF").size());
         assertEquals(src.list().size() / 2, jpegs.find("**/*.JPG").size());

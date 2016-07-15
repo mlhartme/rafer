@@ -62,7 +62,7 @@ public class Main {
         jpegs = world.getHome().join("Google Drive/Bilder");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
-        backups.add(world.file("/Volumes/Elements3T/Bilder"));
+        backups.add(world.file("/Volumes/Elements3T-1/Bilder"));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         trash = world.getHome().join(".trash/rafer").mkdirOpt();
         try {
@@ -128,7 +128,7 @@ public class Main {
             for (FileNode backup : backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
-                    console.info.println("backup rafs to " + backup + " ...");
+                    console.info.println("backup sync with " + backup + " ...");
                     backup(rafs, backup);
                 } else {
                     console.info.println("backup not available: " + backup);

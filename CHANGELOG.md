@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><document xmlns="http://maven.apache.org/changes/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/changes/1.0.0 http://maven.apache.org/xsd/changes-1.0.0.xsd http://maven.apache.org/changes/1.0.0 ">
   <body>
     <release version="1.1.0">
+      <action date="2016-07-15" dev="mlhartme" type="update">
+        You can run rafer without a card and/or without available backups now.
+      </action>
       <action date="2016-02-26" dev="mlhartme" type="update">
         Store artist and copyright.
       </action>

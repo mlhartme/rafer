@@ -233,7 +233,7 @@ public class Main {
             if (!src.exists()) {
                 if (src.getParent().exists()) {
                     console.info.println("D " + destRoot.getName() + "/" + path);
-                    // dest.deleteFile();
+                    dest.deleteFile();
                 } else {
                     // e.g. if src only contains the current year, but the backups hold all the years
                     console.info.println("not synced: " + src.getParent());

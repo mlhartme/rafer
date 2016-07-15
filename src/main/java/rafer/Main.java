@@ -49,7 +49,7 @@ public class Main {
         FileNode dest;
         List<FileNode> backups;
         FileNode gpxTracks;
-        FileNode cloud;
+        FileNode jpegs;
 
         world = new World();
         console = Console.create(world);
@@ -63,9 +63,9 @@ public class Main {
         backups.add(console.world.file("/Volumes/Data/Bilder"));
         backups.add(console.world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = (FileNode) console.world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
-        cloud = (FileNode) console.world.getHome().join("Google Drive/Bilder");
+        jpegs = (FileNode) console.world.getHome().join("Google Drive/Bilder");
         try {
-            new Main(console, card, dest, backups, gpxTracks, cloud).run();
+            new Main(console, card, dest, backups, gpxTracks, jpegs).run();
             return 0;
         } catch (RuntimeException e) {
             throw e;
@@ -88,17 +88,17 @@ public class Main {
     private final List<FileNode> backups;
     private final FileNode gpxTracks;
     // may be null
-    private final FileNode cloud;
+    private final FileNode jpegs;
 
     public Main(Console console, FileNode card, FileNode destDng, List<FileNode> backups,
-                FileNode gpxTracks, FileNode cloud) throws IOException {
+                FileNode gpxTracks, FileNode jpegs) throws IOException {
         this.console = console;
         // no card, no fun
         this.card = card;
         this.raws = destDng;
         this.backups = backups;
         this.gpxTracks = gpxTracks;
-        this.cloud = cloud;
+        this.jpegs = jpegs;
     }
 
     public void run() throws IOException {
@@ -114,8 +114,8 @@ public class Main {
         directory("raws", raws);
         directories("backup", backups);
         directory("gpxTracks", gpxTracks);
-        if (cloud != null) {
-            directory("cloud", cloud);
+        if (jpegs != null) {
+            directory("jpegs", jpegs);
         }
 
         process = new ProcessBuilder("caffeinate").start();
@@ -138,9 +138,9 @@ public class Main {
             geotags(tmp, firstTimestamp);
             console.info.println("saving raws at " + raws + " ...");
             saveRaws(tmp, pairs);
-            if (cloud != null) {
-                console.info.println("add to cloud ...");
-                cloud(tmp, pairs.keySet());
+            if (jpegs != null) {
+                console.info.println("add to jpegs ...");
+                jpegs(tmp, pairs.keySet());
             }
             for (FileNode backup : backups) {
                 console.info.println("backup raws to " + backup + " ...");
@@ -178,9 +178,9 @@ public class Main {
         return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
-    private void cloud(FileNode tmp, Collection<String> names) throws IOException {
+    private void jpegs(FileNode tmp, Collection<String> names) throws IOException {
         for (String name : names) {
-            tmp.join(name + JPG).copyFile(cloud.join(name + JPG));
+            tmp.join(name + JPG).copyFile(jpegs.join(name + JPG));
         }
     }
 

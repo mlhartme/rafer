@@ -12,3 +12,10 @@ Tracking tools Know how:
    * myTracks
       * you have to save a track before restart or running out of battery :(  
       * you have to restart tracking after every reboot :(
+
+
+## Directories
+
+* Raws: where to store recent raws - I use a local drive for this
+* Jpegs: where to store recent jpegs - I use Google Drive or Dropbox for this
+* Backups: where to permanently store raws and jpegs. Includes everything from raws and jpegs

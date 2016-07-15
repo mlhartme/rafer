@@ -1,8 +1,11 @@
 # rafer
-Download Fuji Raw+Jpg files, geo-tag then, backup the raws and push the jpegs into the cloud.
+
+Set your Fuji to take raw+jpg, use rafer to fetch these images from the memory card,
+geotag them, and store them one your local machine and backup locations.
 
 Prerequisites: 
    * Mac OS
+   * Java 8
    * exiftool: http://www.sno.phy.queensu.ca/~phil/exiftool/
 
 Tracking tools Know how:

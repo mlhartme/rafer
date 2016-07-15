@@ -16,11 +16,9 @@
 package rafer;
 
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.MoveException;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.launcher.Failure;
 import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 
@@ -103,50 +101,69 @@ public class Main {
     }
 
     public void run() throws IOException {
+        Process process;
+        int cardCount;
+        int backupCount;
+
+        cardCount = 0;
+        backupCount = 0;
+        directory("raws", raws);
+        directory("jpegs", jpegs);
+        process = new ProcessBuilder("caffeinate").start();
+        try {
+            if (card.isDirectory()) {
+                cardCount++;
+                card();
+            } else {
+                console.info.println("no card");
+            }
+            for (FileNode backup : backups) {
+                if (backup.isDirectory()) {
+                    backupCount++;
+                    console.info.println("backup raws to " + backup + " ...");
+                    backup(raws, backup);
+                } else {
+                    console.info.println("backup not available: " + backup);
+                }
+            }
+            console.info.println();
+            console.info.println("done: card " + cardCount + ", backups: " + backupCount);
+        } finally {
+            process.destroy();
+        }
+    }
+
+    public void card() throws IOException {
         FileNode tmp;
         Map<String, Long> pairs;
         Collection<Long> values;
         long firstTimestamp;
         long lastTimestamp;
         FileNode dcim;
-        Process process;
 
         directory("card", card);
-        directory("raws", raws);
-        directory("jpegs", jpegs);
-        directories("backup", backups);
         directory("gpxTracks", gpxTracks);
 
-        process = new ProcessBuilder("caffeinate").start();
-        try {
-            tmp = world.getTemp().createTempDirectory();
-
-            dcim = card.join("DCIM");
-            if (download(findRafs(dcim), tmp).isEmpty()) {
-                console.info.println("no images");
-                ejectOpt();
-                return;
-            }
-            onCardBackup(dcim);
+        tmp = world.getTemp().createTempDirectory();
+        dcim = card.join("DCIM");
+        if (download(findRafs(dcim), tmp).isEmpty()) {
+            console.info.println("no images");
             ejectOpt();
-            pairs = timestamps(tmp);
-            values = pairs.values();
-            firstTimestamp = Collections.min(values);
-            lastTimestamp = Collections.max(values);
-            console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to " + FMT.format(new Date(lastTimestamp)));
-            geotags(tmp, firstTimestamp);
-            console.info.println("saving raws at " + raws + " ...");
-            saveRaws(tmp, pairs);
-            console.info.println("add to jpegs ...");
-            jpegs(tmp, pairs.keySet());
-            for (FileNode backup : backups) {
-                console.info.println("backup raws to " + backup + " ...");
-                backup(raws, backup);
-            }
-            tmp.deleteTree();
-        } finally {
-            process.destroy();
+            return;
         }
+        onCardBackup(dcim);
+        ejectOpt();
+        pairs = timestamps(tmp);
+        values = pairs.values();
+        firstTimestamp = Collections.min(values);
+        lastTimestamp = Collections.max(values);
+        console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to " + FMT.format(new Date(lastTimestamp)));
+        geotags(tmp, firstTimestamp);
+        console.info.println("saving jpegs at " + jpegs + " ...");
+        moveJpegs(tmp, pairs.keySet());
+        console.info.println("saving raws at " + raws + " ...");
+        moveRaws(tmp, pairs);
+        tmp.deleteDirectory(); // it's empty now
     }
 
     private Map<String, Long> timestamps(FileNode tmp) throws IOException {
@@ -175,13 +192,13 @@ public class Main {
         return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
-    private void jpegs(FileNode tmp, Collection<String> names) throws IOException {
+    private void moveJpegs(FileNode tmp, Collection<String> names) throws IOException {
         for (String name : names) {
-            tmp.join(name + JPG).copyFile(jpegs.join(name + JPG));
+            tmp.join(name + JPG).move(jpegs.join(name + JPG));
         }
     }
 
-    private void saveRaws(FileNode srcDir, Map<String, Long> pairs) throws IOException {
+    private void moveRaws(FileNode srcDir, Map<String, Long> pairs) throws IOException {
         FileNode src;
         FileNode dest;
 
@@ -198,6 +215,7 @@ public class Main {
     private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
         String path;
 
+        // add
         for (Node src : srcRoot.find("**/*" + RAF)) {
             path = src.getRelative(srcRoot);
             FileNode dest = destRoot.join(path);
@@ -215,7 +233,7 @@ public class Main {
             if (!src.exists()) {
                 if (src.getParent().exists()) {
                     console.info.println("D " + destRoot.getName() + "/" + path);
-                    dest.deleteFile();
+                    // dest.deleteFile();
                 } else {
                     // e.g. if src only contains the current year, but the backups hold all the years
                     console.info.println("not synced: " + src.getParent());

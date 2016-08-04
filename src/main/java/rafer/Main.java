@@ -19,6 +19,7 @@ import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
+import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 
@@ -62,7 +63,7 @@ public class Main {
         jpegs = world.getHome().join("Google Drive/Bilder");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
-        backups.add(world.file("/Volumes/Elements3T-1/Bilder"));
+        backups.add(world.file("/Volumes/Elements3T/Bilder"));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         trash = world.getHome().join(".trash/rafer").mkdirOpt();
         try {
@@ -340,9 +341,13 @@ public class Main {
     private List<FileNode> findRafs(FileNode dcim) throws IOException {
         List<FileNode> result;
         String name;
+        Filter filter;
 
         dcim.checkDirectory();
-        result = dcim.find("**/*.RAF");
+        filter = dcim.getWorld().filter();
+        filter.include("**/*.RAF");
+        filter.exclude("**/._*.RAF");
+        result = dcim.find(filter);
         for (Node raf : result) {
             if (!jpg((FileNode) raf).exists()) {
                 throw new IOException("missing jpg for " + raf);
@@ -355,7 +360,7 @@ public class Main {
             if (other.isDirectory()) {
                 // ignore
             } else if (other.getName().startsWith(".")) {
-                // ignore, e.g .DS_Store, .dropbox_device
+                // ignore, e.g .DS_Store, .dropbox_device, finder previews: ._*
             } else if (!result.contains(other)) {
                 name = other.getName();
                 if (name.endsWith(JPG) && result.contains(other.getParent().join(Strings.removeRight(name, JPG) + RAF))) {

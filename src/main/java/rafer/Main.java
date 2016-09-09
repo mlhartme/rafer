@@ -24,6 +24,8 @@ import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 
 import java.io.IOException;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -230,6 +232,7 @@ public class Main {
 
     public void card() throws IOException {
         List<FileNode> cardRafs;
+        List<FileNode> downloaded;
         FileNode tmp;
         Map<String, Long> pairs;
         Collection<Long> values;
@@ -243,8 +246,8 @@ public class Main {
         tmp = world.getTemp().createTempDirectory();
         dcim = card.join("DCIM");
         cardRafs = findRafs(dcim);
-        download(cardRafs, tmp);
-        onCardBackup(dcim);
+        downloaded = download(cardRafs, tmp);
+        onCardBackup(dcim, downloaded);
         ejectOpt();
         pairs = timestamps(tmp);
         values = pairs.values();
@@ -383,23 +386,28 @@ public class Main {
         }
     }
 
-    /** @return names or raf- and jpg pairs */
-    private List<String> download(List<FileNode> srcRafs, FileNode dest) throws IOException {
-        List<String> result;
-        String name;
+    /** @return srcRafs actually downloaded */
+    private List<FileNode> download(List<FileNode> srcRafs, FileNode dest) throws IOException {
+        List<FileNode> result;
         FileNode destRaf;
+        FileNode destJpg;
+        FileStore store;
+        long available;
 
+        store = Files.getFileStore(dest.toPath());
         console.info.println("downloading " + srcRafs.size() + " images to " + dest);
         result = new ArrayList<>(srcRafs.size());
-        for (Node srcRaf : srcRafs) {
-            destRaf = dest.join(srcRaf.getName());
-            name = Strings.removeRight(destRaf.getName(), RAF);
-            if (result.contains(name)) {
-                throw new IOException("naming clash: " + name);
+        for (FileNode srcRaf : srcRafs) {
+            available = store.getUsableSpace();
+            if (available < 1024l * 1024 * 1024) {
+                System.out.println("WARNING: disk space is low -- download is incomplete!");
+                break;
             }
-            result.add(name);
+            destRaf = dest.join(srcRaf.getName());
+            destJpg = jpg(destRaf);
+            result.add(srcRaf);
             srcRaf.copyFile(destRaf);
-            jpg((FileNode) srcRaf).copyFile(jpg(destRaf));
+            jpg(srcRaf).copyFile(destJpg);
         }
         return result;
     }
@@ -422,8 +430,10 @@ public class Main {
         }
     }
 
-    private void onCardBackup(FileNode src) throws IOException {
+    private void onCardBackup(FileNode src, List<FileNode> srcRafs) throws IOException {
         FileNode downloaded;
+        String path;
+        FileNode destRaf;
 
         downloaded = card.join("DOWNLOADED");
         if (downloaded.isDirectory()) {
@@ -432,8 +442,17 @@ public class Main {
         }
         downloaded.checkNotExists();
 
-        console.info.println("moving " + src + " to " + downloaded);
-        src.move(downloaded);
+        console.info.println("moving " + srcRafs.size() + " images from " + src + " to " + downloaded);
+        for (FileNode srcRaf : srcRafs) {
+            path = srcRaf.getRelative(src);
+            destRaf = downloaded.join(path);
+            destRaf.getParent().mkdirsOpt();
+            srcRaf.move(destRaf);
+            jpg(srcRaf).move(jpg(destRaf));
+        }
+        if (findRafs(src).isEmpty()) {
+            console.info.println("complete download, removing " + src);
+        }
     }
 
     private void geotags(FileNode dir, long firstTimestamp) throws IOException {

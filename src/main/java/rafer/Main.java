@@ -229,6 +229,7 @@ public class Main {
     }
 
     public void card() throws IOException {
+        List<FileNode> cardRafs;
         FileNode tmp;
         Map<String, Long> pairs;
         Collection<Long> values;
@@ -241,11 +242,8 @@ public class Main {
 
         tmp = world.getTemp().createTempDirectory();
         dcim = card.join("DCIM");
-        if (download(findRafs(dcim), tmp).isEmpty()) {
-            console.info.println("no images");
-            ejectOpt();
-            return;
-        }
+        cardRafs = findRafs(dcim);
+        download(cardRafs, tmp);
         onCardBackup(dcim);
         ejectOpt();
         pairs = timestamps(tmp);

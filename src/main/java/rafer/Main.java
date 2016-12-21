@@ -62,10 +62,10 @@ public class Main {
         }
         card = world.file("/Volumes/UNTITLED");
         rafs = world.getHome().join("Pictures/Rafer");
-        jpegs = world.getHome().join("Google Drive/Bilder");
+        jpegs = world.getHome().join("timeline");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
-        backups.add(world.file("/Volumes/Elements3T/Bilder"));
+        backups.add(world.file("/Volumes/Neuerkeller/Bilder"));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         trash = world.getHome().join(".trash/rafer").mkdirOpt();
         try {
@@ -203,7 +203,7 @@ public class Main {
         Date date;
 
         if (!name.startsWith("r") || name.indexOf('x') != 7) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(name);
         }
         try {
             date = LINKED_FMT.parse(name.substring(1, 7));
@@ -246,6 +246,11 @@ public class Main {
         tmp = world.getTemp().createTempDirectory();
         dcim = card.join("DCIM");
         cardRafs = findRafs(dcim);
+        if (cardRafs.isEmpty()) {
+            System.out.println("no images");
+            ejectOpt();
+            return;
+        }
         downloaded = download(cardRafs, tmp);
         onCardBackup(dcim, downloaded);
         ejectOpt();
@@ -353,9 +358,6 @@ public class Main {
             if (!jpg((FileNode) raf).exists()) {
                 throw new IOException("missing jpg for " + raf);
             }
-        }
-        if (result.isEmpty()) {
-            throw new IOException("no images in " + dcim);
         }
         for (Node other : dcim.find("**/*")) {
             if (other.isDirectory()) {

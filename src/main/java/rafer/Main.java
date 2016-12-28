@@ -62,7 +62,7 @@ public class Main {
         }
         card = world.file("/Volumes/UNTITLED");
         rafs = world.getHome().join("Pictures/Rafer");
-        jpegs = world.getHome().join("timeline");
+        jpegs = world.getHome().join("Timeline/Album");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
         backups.add(world.file("/Volumes/Neuerkeller/Bilder"));

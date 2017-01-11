@@ -1,5 +1,5 @@
-/**
- * Copyright 1&1 Internet AG, https://github.com/1and1/
+/*
+ * Copyright Michael Hartmeier
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class Main {
         }
         card = world.file("/Volumes/UNTITLED");
         rafs = world.getHome().join("Pictures/Rafer");
-        jpegs = world.getHome().join("Timeline/Album");
+        jpegs = world.getHome().join("Timeline");
         backups = new ArrayList<>();
         backups.add(world.file("/Volumes/Data/Bilder"));
         backups.add(world.file("/Volumes/Neuerkeller/Bilder"));
@@ -80,8 +80,10 @@ public class Main {
         }
     }
 
-    public static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy/MM/dd");
     public static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
+    public static final SimpleDateFormat RAF_FMT = new SimpleDateFormat("yyyy/MM/dd");
+    public static final SimpleDateFormat JPG_FMT = new SimpleDateFormat("yyyy/MM");
+
 
     private static final String STARTED = new SimpleDateFormat("yyMMdd-hhmmss").format(new Date());
 
@@ -155,12 +157,9 @@ public class Main {
         String name;
         FileNode raf;
 
-        for (FileNode jpeg : jpegs.list()) {
+        for (FileNode jpeg : jpegs.find("**/*" + JPG)) {
             name = jpeg.getName();
-            if (!name.endsWith(JPG)) {
-                continue;
-            }
-            raf = getRaf(name, rafs);
+            raf = getRaf(removeExtension(name), rafs);
             if (!raf.exists()) {
                 console.info.println("D " + name);
                 inboxTrash(jpeg);
@@ -173,7 +172,7 @@ public class Main {
 
         for (FileNode raf : rafs.find("**/*.RAF")) {
             name = raf.getName();
-            if (!getJpg(name, jpegs).exists()) {
+            if (!getJpg(removeExtension(name), jpegs).exists()) {
                 console.info.println("D " + name);
                 inboxTrash(raf);
             }
@@ -200,24 +199,24 @@ public class Main {
     }
 
     private static FileNode getRaf(String name, FileNode root) {
-        Date date;
-
-        if (!name.startsWith("r") || name.indexOf('x') != 7) {
-            throw new IllegalArgumentException(name);
-        }
-        try {
-            date = LINKED_FMT.parse(name.substring(1, 7));
-        } catch (ParseException e) {
-            throw new IllegalStateException(name + ": " + e.getMessage());
-        }
-        return root.join(Main.FMT.format(date)).join(removeExtension(name) + RAF);
+        return root.join(RAF_FMT.format(getDate(name))).join(name + RAF);
     }
 
     private static FileNode getJpg(String name, FileNode root) {
+        return root.join(JPG_FMT.format(getDate(name)), name + JPG);
+    }
+
+    private static Date getDate(String name) {
+        Date date;
         if (!name.startsWith("r") || name.indexOf('x') != 7) {
             throw new IllegalArgumentException();
         }
-        return root.join(removeExtension(name) + JPG);
+        try {
+            date = Main.LINKED_FMT.parse(name.substring(1, 7));
+        } catch (ParseException e) {
+            throw new IllegalStateException(e);
+        }
+        return date;
     }
 
     private static String removeExtension(String str) {
@@ -258,7 +257,7 @@ public class Main {
         values = pairs.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);
-        console.info.println("images ranging from " + FMT.format(new Date(firstTimestamp)) + " to " + FMT.format(new Date(lastTimestamp)));
+        console.info.println("images ranging from " + RAF_FMT.format(new Date(firstTimestamp)) + " to " + RAF_FMT.format(new Date(lastTimestamp)));
         geotags(tmp, firstTimestamp);
         console.info.println("saving jpegs at " + jpegs + " ...");
         moveJpegs(tmp, pairs.keySet());
@@ -294,8 +293,12 @@ public class Main {
     }
 
     private void moveJpegs(FileNode tmp, Collection<String> names) throws IOException {
+        FileNode dest;
+
         for (String name : names) {
-            tmp.join(name + JPG).move(jpegs.join(name + JPG));
+            dest = getJpg(name, jpegs);
+            dest.getParent().mkdirsOpt();
+            tmp.join(name + JPG).move(dest);
         }
     }
 
@@ -305,7 +308,7 @@ public class Main {
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = srcDir.join(entry.getKey() + RAF);
-            dest = rafs.join(FMT.format(entry.getValue()), src.getName());
+            dest = rafs.join(RAF_FMT.format(entry.getValue()), src.getName());
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.move(dest); // dont copy - disk might be full

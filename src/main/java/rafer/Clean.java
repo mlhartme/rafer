@@ -22,29 +22,23 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 
-public class Sort {
+public class Clean {
     public static void main(String[] args) throws IOException, ParseException {
         World world;
-        FileNode src;
-        FileNode dest;
-        String name;
-        Date date;
-        FileNode file;
+        FileNode dir;
 
         world = World.create();
-        src = world.getHome().join("Desktop/todobilder");
-        src.checkDirectory();
-        dest = world.getHome().join("Timeline");
-        dest.checkDirectory();
-        for (FileNode raf : src.find("**/*.JPG")) {
-            name = raf.getName();
-            if (!name.startsWith("r") || name.indexOf('x') != 7) {
-                throw new IllegalStateException();
+        dir = world.file("/Volumes/Neuerkeller/Bilder");
+        for (FileNode d : dir.find("*/??/??")) {
+            d.checkDirectory();
+            for (FileNode xmp : d.find("*.xmp")) {
+                System.out.println("xmp: " + xmp);
+                xmp.deleteFile();
             }
-            date = Main.LINKED_FMT.parse(name.substring(1, 7));
-            file = dest.join(Main.MONTH_FMT.format(date), name);
-            System.out.println(name + " -> " + file);
-            raf.move(file);
+            if (d.list().isEmpty()) {
+                System.out.println("empty: " + d);
+                d.deleteDirectory();
+            }
         }
     }
 }

@@ -81,8 +81,8 @@ public class Main {
     }
 
     public static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
-    public static final SimpleDateFormat RAF_FMT = new SimpleDateFormat("yyyy/MM/dd");
-    public static final SimpleDateFormat JPG_FMT = new SimpleDateFormat("yyyy/MM");
+    public static final SimpleDateFormat DAY_FMT = new SimpleDateFormat("yyyy/MM/dd");
+    public static final SimpleDateFormat MONTH_FMT = new SimpleDateFormat("yyyy/MM");
 
 
     private static final String STARTED = new SimpleDateFormat("yyMMdd-hhmmss").format(new Date());
@@ -96,7 +96,7 @@ public class Main {
     private final FileNode rafs;
     private final List<FileNode> backups;
     private final FileNode gpxTracks;
-    // may be null
+    // where to sto jpegs; may be null
     private final FileNode jpegs;
     private final FileNode inboxTrash;
 
@@ -130,6 +130,7 @@ public class Main {
                 console.info.println("no card");
             }
             inboxSync();
+            /* TODO
             for (FileNode backup : backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
@@ -138,7 +139,7 @@ public class Main {
                 } else {
                     console.info.println("backup not available: " + backup);
                 }
-            }
+            }*/
             console.info.println();
             console.info.println("done: card " + cardCount + ", backups: " + backupCount);
         } finally {
@@ -148,8 +149,9 @@ public class Main {
 
     public void inboxSync() throws IOException {
         console.info.println("inbox sync ...");
-        wipeJpeg();
-        wipeRaf();
+        // TODO
+        // wipeJpeg();
+        // wipeRaf();
         console.info.println("done");
     }
 
@@ -159,7 +161,7 @@ public class Main {
 
         for (FileNode jpeg : jpegs.find("**/*" + JPG)) {
             name = jpeg.getName();
-            raf = getRaf(removeExtension(name), rafs);
+            raf = getFile(removeExtension(name), rafs);
             if (!raf.exists()) {
                 console.info.println("D " + name);
                 inboxTrash(jpeg);
@@ -172,7 +174,7 @@ public class Main {
 
         for (FileNode raf : rafs.find("**/*.RAF")) {
             name = raf.getName();
-            if (!getJpg(removeExtension(name), jpegs).exists()) {
+            if (!getFile(removeExtension(name), jpegs).exists()) {
                 console.info.println("D " + name);
                 inboxTrash(raf);
             }
@@ -198,12 +200,8 @@ public class Main {
         file.move(dir.join(file.getName()));
     }
 
-    private static FileNode getRaf(String name, FileNode root) {
-        return root.join(RAF_FMT.format(getDate(name))).join(name + RAF);
-    }
-
-    private static FileNode getJpg(String name, FileNode root) {
-        return root.join(JPG_FMT.format(getDate(name)), name + JPG);
+    private static FileNode getFile(String name, FileNode root) {
+        return root.join(MONTH_FMT.format(getDate(name)), name + JPG);
     }
 
     private static Date getDate(String name) {
@@ -257,7 +255,7 @@ public class Main {
         values = pairs.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);
-        console.info.println("images ranging from " + RAF_FMT.format(new Date(firstTimestamp)) + " to " + RAF_FMT.format(new Date(lastTimestamp)));
+        console.info.println("images ranging from " + DAY_FMT.format(new Date(firstTimestamp)) + " to " + DAY_FMT.format(new Date(lastTimestamp)));
         geotags(tmp, firstTimestamp);
         console.info.println("saving jpegs at " + jpegs + " ...");
         moveJpegs(tmp, pairs.keySet());
@@ -296,7 +294,7 @@ public class Main {
         FileNode dest;
 
         for (String name : names) {
-            dest = getJpg(name, jpegs);
+            dest = getFile(name, jpegs);
             dest.getParent().mkdirsOpt();
             tmp.join(name + JPG).move(dest);
         }
@@ -308,7 +306,7 @@ public class Main {
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = srcDir.join(entry.getKey() + RAF);
-            dest = rafs.join(RAF_FMT.format(entry.getValue()), src.getName());
+            dest = rafs.join(MONTH_FMT.format(entry.getValue()), src.getName());
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.move(dest); // dont copy - disk might be full

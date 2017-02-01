@@ -20,31 +20,30 @@ import net.oneandone.sushi.fs.file.FileNode;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class Sort {
+public class Index {
     public static void main(String[] args) throws IOException, ParseException {
         World world;
-        FileNode src;
-        FileNode dest;
-        String name;
-        Date date;
-        FileNode file;
+        FileNode dir;
+        List<String> lines;
 
         world = World.create();
-        src = world.getHome().join("Desktop/todobilder");
-        src.checkDirectory();
-        dest = world.getHome().join("Timeline");
-        dest.checkDirectory();
-        for (FileNode raf : src.find("**/*.JPG")) {
-            name = raf.getName();
-            if (!name.startsWith("r") || name.indexOf('x') != 7) {
-                throw new IllegalStateException();
+        dir = world.file("/Volumes/Data/Bilder");
+        lines = new ArrayList<>();
+        for (FileNode file : dir.find("**/*")) {
+            if (file.isFile()) {
+                try {
+                    lines.add(file.getRelative(dir) + " " + file.md5());
+                } catch (IOException e) {
+                    e.printStackTrace();;
+                }
+            } else {
+                System.out.println(file);
             }
-            date = Main.LINKED_FMT.parse(name.substring(1, 7));
-            file = dest.join(Main.MONTH_FMT.format(date), name);
-            System.out.println(name + " -> " + file);
-            raf.move(file);
         }
+        dir.join(".index").writeLines(lines);
     }
 }

@@ -130,7 +130,6 @@ public class Main {
                 console.info.println("no card");
             }
             inboxSync();
-            /* TODO
             for (FileNode backup : backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
@@ -139,7 +138,7 @@ public class Main {
                 } else {
                     console.info.println("backup not available: " + backup);
                 }
-            }*/
+            }
             console.info.println();
             console.info.println("done: card " + cardCount + ", backups: " + backupCount);
         } finally {

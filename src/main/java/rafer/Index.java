@@ -31,7 +31,7 @@ public class Index {
         World world;
         FileNode dir;
         List<String> lines;
-        String prev;
+        List<String> prev;
         FileNode idx;
 
         world = World.create();
@@ -49,11 +49,11 @@ public class Index {
         Collections.sort(lines);
         idx = dir.join(".index");
         if (idx.exists()) {
-            prev = idx.readString();
+            prev = idx.readLines();
         } else {
-            prev = "";
+            prev = new ArrayList<>();
         }
         idx.writeLines(lines);
-        System.out.println(Diff.diff(prev, idx.readString()));
+        System.out.println(Diff.diff(prev, lines, false, 0, false));
     }
 }

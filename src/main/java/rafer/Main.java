@@ -149,10 +149,20 @@ public class Main {
 
     public void inboxSync() throws IOException {
         console.info.println("inbox sync ...");
+        wipeJpeg();
         // TODO
-        // wipeJpeg();
         // wipeRaf();
         console.info.println("done");
+    }
+
+    private static final Date START_DATE;
+
+    static {
+        try {
+            START_DATE = LINKED_FMT.parse("170101");
+        } catch (ParseException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public void wipeJpeg() throws IOException {
@@ -161,10 +171,14 @@ public class Main {
 
         for (FileNode jpeg : jpegs.find("**/*" + JPG)) {
             name = jpeg.getName();
-            raf = getFile(removeExtension(name), rafs);
-            if (!raf.exists()) {
-                console.info.println("D " + name);
-                inboxTrash(jpeg);
+            if (getDate(name).before(START_DATE)) {
+                // skip
+            } else {
+                raf = getFile(removeExtension(name), rafs, RAF);
+                if (!raf.exists()) {
+                    console.info.println("D " + name);
+                    inboxTrash(jpeg);
+                }
             }
         }
     }
@@ -174,7 +188,7 @@ public class Main {
 
         for (FileNode raf : rafs.find("**/*.RAF")) {
             name = raf.getName();
-            if (!getFile(removeExtension(name), jpegs).exists()) {
+            if (!getFile(removeExtension(name), jpegs, JPG).exists()) {
                 console.info.println("D " + name);
                 inboxTrash(raf);
             }
@@ -200,12 +214,19 @@ public class Main {
         file.move(dir.join(file.getName()));
     }
 
-    private static FileNode getFile(String name, FileNode root) {
-        return root.join(MONTH_FMT.format(getDate(name)), name + JPG);
+    private static FileNode getRafFile(String name, FileNode root) {
+        return getFile(name, root, RAF);
+    }
+    private static FileNode getJpgFile(String name, FileNode root) {
+        return getFile(name, root, JPG);
+    }
+    private static FileNode getFile(String name, FileNode root, String ext) {
+        return root.join(MONTH_FMT.format(getDate(name)), name + ext);
     }
 
     private static Date getDate(String name) {
         Date date;
+
         if (!name.startsWith("r") || name.indexOf('x') != 7) {
             throw new IllegalArgumentException();
         }
@@ -294,7 +315,7 @@ public class Main {
         FileNode dest;
 
         for (String name : names) {
-            dest = getFile(name, jpegs);
+            dest = getJpgFile(name, jpegs);
             dest.getParent().mkdirsOpt();
             tmp.join(name + JPG).move(dest);
         }

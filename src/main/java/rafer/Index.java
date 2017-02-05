@@ -20,40 +20,87 @@ import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.util.Diff;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /** Creates Index for a backup tree */
 public class Index {
     public static void main(String[] args) throws IOException, ParseException {
         World world;
         FileNode dir;
-        List<String> lines;
-        List<String> prev;
-        FileNode idx;
+        Index index;
 
         world = World.create();
         dir = world.file("/Volumes/Data/Bilder");
-        lines = new ArrayList<>();
+        index = new Index();
         for (FileNode file : dir.find("**/*")) {
             if (file.isFile() && !file.getName().startsWith(".")) {
                 try {
-                    lines.add(file.getRelative(dir) + " " + file.md5());
+                    index.put(file.getRelative(dir), file.md5());
                 } catch (IOException e) {
+                    System.out.println(file + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             }
         }
-        Collections.sort(lines);
-        idx = dir.join(".index");
-        if (idx.exists()) {
-            prev = idx.readLines();
-        } else {
-            prev = new ArrayList<>();
+        System.out.println(index.save(dir));
+    }
+
+    //--
+
+    public static FileNode file(FileNode dir) {
+        return dir.join(".index");
+    }
+
+    public static Index load(FileNode dir) throws IOException {
+        int idx;
+        Index result;
+
+        result = new Index();
+        for (String line : file(dir).readLines()) {
+            idx = line.indexOf(' ');
+            result.put(line.substring(0, idx), line.substring(idx + 1));
         }
-        idx.writeLines(lines);
-        System.out.println(Diff.diff(prev, lines, false, 0, false));
+        return result;
+    }
+
+    private Map<String, String> lines;
+
+    public Index() {
+        lines = new HashMap<>();
+    }
+
+    public void put(String path, String hash) {
+        lines.put(path, hash);
+    }
+
+    public boolean contains(String path) {
+        return lines.containsKey(path);
+    }
+
+    /** @return diff */
+    public String save(FileNode dir) throws IOException {
+        FileNode idx;
+        String prev;
+        List<String> keys;
+
+        idx = file(dir);
+        if (idx.exists()) {
+            prev = idx.readString();
+        } else {
+            prev = "";
+        }
+        keys = new ArrayList<>(lines.keySet());
+        Collections.sort(keys);
+        try (Writer dest = file(dir).newWriter()) {
+            for (String key : keys) {
+                dest.write(key);
+                dest.write(' ');
+                dest.write(lines.get(key));
+                dest.write('\n');
+            }
+        }
+        return Diff.diff(prev, idx.readString());
     }
 }

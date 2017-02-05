@@ -25,7 +25,7 @@ import java.text.ParseException;
 import java.util.*;
 
 /** Creates Index for a backup tree */
-public class Index {
+public class Index implements Iterable<String> {
     public static void main(String[] args) throws IOException, ParseException {
         World world;
         FileNode dir;
@@ -56,11 +56,15 @@ public class Index {
     public static Index load(FileNode dir) throws IOException {
         int idx;
         Index result;
+        FileNode file;
 
         result = new Index();
-        for (String line : file(dir).readLines()) {
-            idx = line.indexOf(' ');
-            result.put(line.substring(0, idx), line.substring(idx + 1));
+        file = file(dir);
+        if (file.exists()) {
+            for (String line : file.readLines()) {
+                idx = line.indexOf(' ');
+                result.put(line.substring(0, idx), line.substring(idx + 1));
+            }
         }
         return result;
     }
@@ -93,7 +97,7 @@ public class Index {
         }
         keys = new ArrayList<>(lines.keySet());
         Collections.sort(keys);
-        try (Writer dest = file(dir).newWriter()) {
+        try (Writer dest = idx.newWriter()) {
             for (String key : keys) {
                 dest.write(key);
                 dest.write(' ');
@@ -102,5 +106,10 @@ public class Index {
             }
         }
         return Diff.diff(prev, idx.readString());
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+        return lines.keySet().iterator();
     }
 }

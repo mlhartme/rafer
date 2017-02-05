@@ -335,30 +335,30 @@ public class Main {
     }
 
     private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
-        String path;
+        Index index;
+        FileNode dest;
 
-        // add
+        index = Index.load(destRoot);
         for (Node src : srcRoot.find("**/*" + RAF)) {
-            path = src.getRelative(srcRoot);
-            FileNode dest = destRoot.join(path);
-            if (!dest.exists()) {
+            String path = src.getRelative(srcRoot);
+            if (!index.contains(path)) {
+                dest = destRoot.join(path);
                 dest.getParent().mkdirsOpt();
                 console.info.println("A " + destRoot.getName() + "/" + path);
                 src.copyFile(dest);
                 dest.setLastModified(src.getLastModified());
+                index.put(path, src.md5());
             }
         }
 
-        for (FileNode dest : destRoot.find("**/*" + RAF)) {
-            path = dest.getRelative(destRoot);
+        for (String path : index) {
             FileNode src = srcRoot.join(path);
             if (!src.exists()) {
-                if (src.getParent().exists()) {
-                    console.info.println("D " + destRoot.getName() + "/" + path);
-                    backupTrash(destRoot, dest);
+                if (getDate(src.getName()).before(START_DATE)) {
+                    // skip
                 } else {
-                    // e.g. if src only contains the current year, but the backups hold all the years
-                    console.verbose.println("not synced: " + src.getParent());
+                    console.info.println("D " + destRoot.getName() + "/" + path);
+                    backupTrash(destRoot, destRoot.join(path));
                 }
             }
         }

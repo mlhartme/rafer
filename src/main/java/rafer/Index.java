@@ -79,6 +79,10 @@ public class Index implements Iterable<String> {
         lines.put(path, hash);
     }
 
+    public void remove(String path) {
+        lines.remove(path);
+    }
+
     public boolean contains(String path) {
         return lines.containsKey(path);
     }

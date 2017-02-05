@@ -359,9 +359,11 @@ public class Main {
                 } else {
                     console.info.println("D " + destRoot.getName() + "/" + path);
                     backupTrash(destRoot, destRoot.join(path));
+                    index.remove(path);
                 }
             }
         }
+        console.info.println(index.save(destRoot));
     }
 
     /** @return raf nodes with jpg sidecar */

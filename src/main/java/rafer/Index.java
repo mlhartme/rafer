@@ -30,21 +30,40 @@ public class Index implements Iterable<String> {
         World world;
         FileNode dir;
         Index index;
+        String path;
 
         world = World.create();
         dir = world.file("/Volumes/Data/Bilder");
         index = new Index();
         for (FileNode file : dir.find("**/*")) {
-            if (file.isFile() && !file.getName().startsWith(".")) {
-                try {
-                    index.put(file.getRelative(dir), file.md5());
-                } catch (IOException e) {
-                    System.out.println(file + ": " + e.getMessage());
-                    e.printStackTrace();
-                }
+            if (file.isDirectory()) {
+                continue;
+            }
+            path = file.getRelative(dir);
+            if (ignored(path)) {
+                continue;
+            }
+            try {
+                index.put(path, file.md5());
+            } catch (IOException e) {
+                System.out.println(file + ": " + e.getMessage());
+                e.printStackTrace();
             }
         }
         System.out.println(index.save(dir));
+    }
+
+    public static boolean ignored(String path) {
+        String name;
+
+        if (path.contains("/CaptureOne/Cache/")) {
+            return true;
+        }
+        name = path.substring(path.lastIndexOf('/') + 1); // ok for not found
+        if (name.startsWith(".")) {
+            return true;
+        }
+        return false;
     }
 
     //--
@@ -109,7 +128,7 @@ public class Index implements Iterable<String> {
                 dest.write('\n');
             }
         }
-        return Diff.diff(prev, idx.readString());
+        return "TODO: diff"; // Diff.diff(prev, idx.readString());
     }
 
     @Override

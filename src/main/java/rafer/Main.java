@@ -116,6 +116,7 @@ public class Main {
         Process process;
         int cardCount;
         int backupCount;
+        int errors;
 
         cardCount = 0;
         backupCount = 0;
@@ -134,7 +135,10 @@ public class Main {
                 if (backup.isDirectory()) {
                     backupCount++;
                     console.info.println("backup sync with " + backup + " ...");
-                    backup(rafs, backup);
+                    errors = backup(rafs, backup);
+                    if (errors > 0) {
+                        console.info.println("# errors: " + errors);
+                    }
                 } else {
                     console.info.println("backup not available: " + backup);
                 }
@@ -334,36 +338,58 @@ public class Main {
         }
     }
 
-    private void backup(FileNode srcRoot, FileNode destRoot) throws IOException {
+    private int backup(FileNode srcRoot, FileNode destRoot) throws IOException {
         Index index;
         FileNode dest;
+        Date date;
+        int errors;
 
         index = Index.load(destRoot);
+        errors = 0;
         for (Node src : srcRoot.find("**/*" + RAF)) {
             String path = src.getRelative(srcRoot);
             if (!index.contains(path)) {
                 dest = destRoot.join(path);
                 dest.getParent().mkdirsOpt();
                 console.info.println("A " + destRoot.getName() + "/" + path);
-                src.copyFile(dest);
-                dest.setLastModified(src.getLastModified());
-                index.put(path, src.md5());
+                try {
+                    src.copyFile(dest);
+                    dest.setLastModified(src.getLastModified());
+                    index.put(path, src.md5());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    errors++;
+                }
             }
         }
 
         for (String path : index) {
             FileNode src = srcRoot.join(path);
             if (!src.exists()) {
-                if (getDate(src.getName()).before(START_DATE)) {
+                try {
+                    date = getDate(src.getName());
+                } catch (IllegalArgumentException e) {
+                    // console.info.println(src.getName());
+                    // e.printStackTrace();
+                    // errors++;
+                    continue;
+                }
+                if (date.before(START_DATE)) {
                     // skip
                 } else {
                     console.info.println("D " + destRoot.getName() + "/" + path);
-                    backupTrash(destRoot, destRoot.join(path));
+                    try {
+                        backupTrash(destRoot, destRoot.join(path));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        errors++;
+                    }
                     index.remove(path);
                 }
             }
         }
-        console.info.println(index.save(destRoot));
+        index.save(destRoot);
+        return errors;
     }
 
     /** @return raf nodes with jpg sidecar */

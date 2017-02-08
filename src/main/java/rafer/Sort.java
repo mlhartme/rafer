@@ -20,10 +20,41 @@ import net.oneandone.sushi.fs.file.FileNode;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Date;
+import java.util.*;
 
 public class Sort {
     public static void main(String[] args) throws IOException, ParseException {
+        World world;
+        FileNode dir;
+        Index idx;
+        List<String> remove;
+        Set<String> suffixes;
+        int i;
+
+        world = World.create();
+        dir = world.file("/Volumes/Data/Bilder");
+        //dir = world.file("/Volumes/Neuerkeller/Bilder");
+        idx = Index.load(dir);
+        remove = new ArrayList<>();
+        suffixes = new HashSet<>();
+        for (String path : idx) {
+            if (Index.ignored(path)) {
+                System.out.println(path);
+                remove.add(path);
+            }
+            i = path.lastIndexOf('.');
+            if (i != -1) {
+                suffixes.add(path.substring(i + 1));
+            }
+        }
+        System.out.println("suffixes: " + suffixes);
+        for (String path : remove) {
+            idx.remove(path);
+        }
+        System.out.println(idx.save(dir));
+    }
+
+    public static void sort(String[] args) throws IOException, ParseException {
         World world;
         FileNode src;
         FileNode dest;

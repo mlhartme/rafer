@@ -1,6 +1,11 @@
 ## Rafer Changelog
 
-### 1.1.0 
+### 1.2.0
+
+* distinguish sync and verify commands
+
+
+### 1.1.0 (2016-12-31, no public release)
 
 * Ignore finder preview files on the card
 * Removed dng conversion, Rafer stores raf and jpg now.

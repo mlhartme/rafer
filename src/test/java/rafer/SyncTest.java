@@ -17,10 +17,8 @@ package rafer;
 
 
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.util.Strings;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -28,13 +26,13 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
-public class MainTest {
+public class SyncTest {
     @Test
     public void foo() throws IOException {
         World world;
         FileNode home;
         FileNode root;
-        Main main;
+        Sync sync;
         FileNode card;
         FileNode raws;
         FileNode jpegs;
@@ -44,7 +42,7 @@ public class MainTest {
         FileNode trash;
 
         world = World.create();
-        home = world.guessProjectHome(MainTest.class);
+        home = world.guessProjectHome(SyncTest.class);
         src = home.join("src/test/card");
         root = home.join("target/it");
         root.deleteTreeOpt();
@@ -57,8 +55,8 @@ public class MainTest {
         gpxTracks = root.join("gpxTracks").mkdir();
         trash = root.join("trash").mkdir();
         backup.join("foo.RAF").mkfile();
-        main = new Main(Console.create(), card, raws, jpegs, Collections.singletonList(backup), gpxTracks, trash);
-        main.run();
+        sync = new Sync(world, Console.create(), card, raws, jpegs, Collections.singletonList(backup), gpxTracks, trash);
+        sync.run();
         assertEquals(src.list().size() / 2, raws.find("**/*.RAF").size());
         assertEquals(src.list().size() / 2, jpegs.find("**/*.JPG").size());
     }

@@ -12,7 +12,7 @@
   <groupId>net.oneandone.mlhartme</groupId>
   <artifactId>rafer</artifactId>
   <packaging>jar</packaging>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
 
   <scm>
     <url>https://github.com/mlhartme/rafer</url>
@@ -61,6 +61,21 @@
             -keep public class ** extends net.oneandone.sushi.fs.Filesystem {
             public &lt;init&gt;(...);
             }
+
+            # inline reflection
+            -keep public class rafer.* {
+            public *;
+            }
+            -keep public class net.oneandone.inline.Console {
+            public *;
+            }
+            -keep public class net.oneandone.inline.commands.PackageVersion {
+            public *;
+            }
+            -keep public class net.oneandone.inline.commands.Help {
+            public *;
+            }
+
           </shrinkOptions>
         </configuration>
         <executions>

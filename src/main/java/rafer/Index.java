@@ -15,25 +15,18 @@
  */
 package rafer;
 
-import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.util.Diff;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.text.ParseException;
 import java.util.*;
 
 /** Creates Index for a backup tree */
 public class Index implements Iterable<String> {
-    public static void main(String[] args) throws IOException, ParseException {
-        World world;
-        FileNode dir;
+    public static Index scan(FileNode dir) throws IOException {
         Index index;
         String path;
 
-        world = World.create();
-        dir = world.file("/Volumes/Data/Bilder");
         index = new Index();
         for (FileNode file : dir.find("**/*")) {
             if (file.isDirectory()) {
@@ -50,7 +43,7 @@ public class Index implements Iterable<String> {
                 e.printStackTrace();
             }
         }
-        System.out.println(index.save(dir));
+        return index;
     }
 
     public static boolean ignored(String path) {
@@ -88,10 +81,11 @@ public class Index implements Iterable<String> {
         return result;
     }
 
+    /** maps paths to md5 */
     private Map<String, String> lines;
 
     public Index() {
-        lines = new HashMap<>();
+        lines = new TreeMap<>();
     }
 
     public void put(String path, String hash) {
@@ -106,33 +100,22 @@ public class Index implements Iterable<String> {
         return lines.containsKey(path);
     }
 
-    /** @return diff */
-    public String save(FileNode dir) throws IOException {
-        FileNode idx;
-        String prev;
-        List<String> keys;
+    public String toString() {
+        StringBuilder result;
 
-        idx = file(dir);
-        if (idx.exists()) {
-            prev = idx.readString();
-        } else {
-            prev = "";
+        result = new StringBuilder();
+        for (Map.Entry<String, String> entry : lines.entrySet()) {
+            result.append(entry.getKey()).append(' ').append(entry.getValue()).append('\n');
         }
-        keys = new ArrayList<>(lines.keySet());
-        Collections.sort(keys);
-        try (Writer dest = idx.newWriter()) {
-            for (String key : keys) {
-                dest.write(key);
-                dest.write(' ');
-                dest.write(lines.get(key));
-                dest.write('\n');
-            }
-        }
-        return "TODO: diff"; // Diff.diff(prev, idx.readString());
+        return result.toString();
+    }
+
+    public void save(FileNode dir) throws IOException {
+        file(dir).writeString(toString());
     }
 
     @Override
     public Iterator<String> iterator() {
-        return lines.keySet().iterator();
+        return new HashSet<>(lines.keySet()).iterator();
     }
 }

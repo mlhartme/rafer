@@ -15,6 +15,7 @@
  */
 package rafer;
 
+import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.file.FileNode;
 
 import java.io.IOException;
@@ -23,42 +24,6 @@ import java.util.*;
 
 /** Creates Index for a backup tree */
 public class Index implements Iterable<String> {
-    public static Index scan(FileNode dir) throws IOException {
-        Index index;
-        String path;
-
-        index = new Index();
-        for (FileNode file : dir.find("**/*")) {
-            if (file.isDirectory()) {
-                continue;
-            }
-            path = file.getRelative(dir);
-            if (ignored(path)) {
-                continue;
-            }
-            try {
-                index.put(path, file.md5());
-            } catch (IOException e) {
-                System.out.println(file + ": " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-        return index;
-    }
-
-    public static boolean ignored(String path) {
-        String name;
-
-        if (path.contains("/CaptureOne/Cache/")) {
-            return true;
-        }
-        name = path.substring(path.lastIndexOf('/') + 1); // ok for not found
-        if (name.startsWith(".")) {
-            return true;
-        }
-        return false;
-    }
-
     //--
 
     public static FileNode file(FileNode dir) {
@@ -74,7 +39,7 @@ public class Index implements Iterable<String> {
         file = file(dir);
         if (file.exists()) {
             for (String line : file.readLines()) {
-                idx = line.indexOf(' ');
+                idx = line.lastIndexOf(' ');
                 result.put(line.substring(0, idx), line.substring(idx + 1));
             }
         }
@@ -100,6 +65,17 @@ public class Index implements Iterable<String> {
         return lines.containsKey(path);
     }
 
+    public int hashCode() {
+        return lines.hashCode();
+    }
+
+    public boolean equals(Object obj) {
+        if (obj instanceof Index) {
+            return lines.equals(((Index) obj).lines);
+        }
+        return false;
+    }
+
     public String toString() {
         StringBuilder result;
 
@@ -118,4 +94,75 @@ public class Index implements Iterable<String> {
     public Iterator<String> iterator() {
         return new HashSet<>(lines.keySet()).iterator();
     }
+
+    public Collection<String> extensions() {
+        Set<String> result;
+        int idx;
+
+        result = new HashSet();
+        for (String path : lines.keySet()) {
+            idx = path.lastIndexOf('.');
+            result.add(path.substring(idx + 1));
+        }
+        return result;
+    }
+
+    public int size() {
+        return lines.size();
+    }
+
+    //--
+
+    public Index verify(FileNode dir, boolean md5, Console console) throws IOException {
+        Index result;
+        String path;
+        String old;
+        String checksum;
+
+        result = new Index();
+        for (FileNode file : dir.find("**/*")) {
+            if (file.isDirectory()) {
+                continue;
+            }
+            path = file.getRelative(dir);
+            if (ignored(path)) {
+                continue;
+            }
+            old =  lines.get(path);
+            if (old == null) {
+                console.info.println("A " + path);
+                checksum = file.md5();
+            } else {
+                if (md5) {
+                    checksum = file.md5();
+                    if (!old.equals(checksum)) {
+                        console.info.println("M " + path);
+                    }
+                } else {
+                    checksum = old;
+                }
+            }
+            result.put(path, checksum);
+        }
+        for (String key : lines.keySet()) {
+            if (!result.contains(key)) {
+                console.info.println("D " + key);
+            }
+        }
+        return result;
+    }
+
+    public static boolean ignored(String path) {
+        String name;
+
+        if (path.contains("/CaptureOne/Cache/")) {
+            return true;
+        }
+        name = path.substring(path.lastIndexOf('/') + 1); // ok for not found
+        if (name.startsWith(".")) {
+            return true;
+        }
+        return false;
+    }
+
 }

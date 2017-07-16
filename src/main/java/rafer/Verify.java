@@ -17,37 +17,35 @@ package rafer;
 
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
-import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.util.Diff;
 
 import java.io.IOException;
 
 public class Verify {
     private final Console console;
+    private final boolean md5;
     private final FileNode dir;
 
-    public Verify(Console console, FileNode dir) throws MkdirException {
+    public Verify(Console console, boolean md5, FileNode dir) throws MkdirException {
         this.console = console;
+        this.md5 = md5;
         this.dir = dir;
     }
 
     public void run() throws IOException {
         Index old;
         Index current;
-        String diff;
 
         dir.checkDirectory();
         old = Index.load(dir);
-        current = Index.scan(dir);
-
-        diff = Diff.diff(old.toString(), current.toString());
-        if (diff.isEmpty()) {
+        current = old.verify(dir, md5, console);
+        if (current.equals(old)) {
             console.info.println("ok: " + dir);
-            return;
+        } else {
+            console.readline("press return to update index, ctrl-c to abort");
+            current.save(dir);
         }
-        console.info.println(diff);
-        console.readline("press return to update index, ctrl-c to abort");
-        current.save(dir);
+        console.info.println("files: " + current.size());
+        console.info.println("extensions: " + current.extensions());
     }
 }

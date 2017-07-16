@@ -28,11 +28,6 @@ import java.util.List;
 import java.util.Set;
 
 public class Clean {
-    private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd hh.mm.ss");
-    private static final SimpleDateFormat FMT2 = new SimpleDateFormat("yyyy-MM-dd - hh-mm-ss");
-
-    private static final List<String> movies = Strings.toList("AVI", "MOV", "mov", "MP4", "mp4");
-
     public static void main(String[] args) throws IOException, ParseException {
         World world;
         FileNode dir;
@@ -40,12 +35,13 @@ public class Clean {
         int idx;
         String ext;
         Set<String> extensions = new HashSet<>();
-
-        FMT.parse("2015-09-26 19.26.28");
+        String full;
 
         world = World.create();
-        //dir = world.file("/Volumes/Data/Bilder");
-        dir = world.file("/Volumes/Neuerkeller/Bilder");
+        dir = world.file("/Volumes/Data/Bilder");
+        //dir = world.file("/Volumes/Neuerkeller/Bilder");
+        FileNode todo = dir.join("TODO-created-date");
+        Date HEUTE = Sync.LINKED_FMT.parse("170501");
         int count = 0;
         for (FileNode month : dir.find("*/??")) {
             month.checkDirectory();
@@ -66,34 +62,21 @@ public class Clean {
                 ext = name.substring(idx + 1);
                 extensions.add(ext);
                 name = name.substring(0, idx);
+                if (!"JPG".equals(ext)) {
+                    continue; // TODO
+                }
+                if (!name.startsWith("r") || name.charAt(7) != 'x') {
+                    throw new IOException("unexpected file name: " + name);
+                }
 
-                if (movies.contains(ext)) {
-                    // ok
-                } else if (ext.equals("RAF") && name.startsWith("r") && name.charAt(7) == 'x') {
-                    // ok
-                } else if ("dng".equals(ext) && check(name, "DSCF")) {
-                    // ok
-                } else if ("dng".equals(ext) && check(name, "SAM_")) {
-                    // ok
-                } else if ("JPG".equals(ext) && check(name, "CIMG")) {
-                    // ok
-                } else if ("JPG".equals(ext) && check(name, "SAM_")) {
-                    // ok
-                } else if ("JPG".equals(ext) && check(name, "DSC")) {
-                    // ok
-                } else if ("RAF".equals(ext) && check(name, "DESC")) {
-                    // ok
-                } else if ("JPG".equals(ext) && check(name, "IMG_")) {
-                    // ok
-                } else if (isDate(name)) {
-                } else if (isDate2(name)) {
+                Date date = new Date(image.getLastModified());
+                if (date.after(HEUTE))  {
+                    move(image, todo.join(image.getParent().getParent().getName(), image.getParent().getName(), image.getName()));
                 } else {
-                    try {
-                        FMT.parse(name);
-                        // ok
-                    } catch (ParseException e) {
-                        System.out.println("TODO: " + image.getName());
-
+                    full = "r" + Sync.LINKED_FMT.format(date) + "x" + image.getName().substring(8);
+                    FileNode dest = dir.join(Sync.MONTH_FMT.format(date), full);
+                    if (!image.equals(dest)) {
+                        move(image, dest);
                     }
                 }
             }
@@ -102,40 +85,26 @@ public class Clean {
         System.out.println("extensions: " + extensions);
     }
 
-    private static boolean isDate(String name) {
-        try {
-            FMT.parse(name);
-            return true;
-        } catch (ParseException e) {
-            return false;
-        }
-    }
+    private static void move(FileNode src, FileNode dest) throws IOException {
+        String name;
+        int idx;
+        String ext;
+        char c;
 
-    private static boolean isDate2(String name) {
-        try {
-            FMT2.parse(name);
-            return true;
-        } catch (ParseException e) {
-            return false;
+        System.out.println(src + " -> " + dest);
+        name = dest.getName();
+        idx = name.lastIndexOf('.');
+        if (idx == -1) {
+            throw new IOException(name);
         }
-    }
-
-    private static boolean check(String str, String prefix) {
-        if (!str.startsWith(prefix)) {
-            return false;
+        ext = name.substring(idx + 1);
+        name = name.substring(0, idx);
+        c = 'a';
+        while (dest.exists()) {
+            dest = dest.getParent().join(name + c + "." + ext);
+            c++;
         }
-        return digits_4_8(str);
-    }
-
-    private static boolean digits_4_8(String str) {
-        if (str.length() != 8) {
-            return false;
-        }
-        for (int i = 4; i < 8; i++) {
-            if (!Character.isDigit(str.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
+        dest.getParent().mkdirsOpt();
+        src.move(dest);
     }
 }

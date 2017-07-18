@@ -15,6 +15,10 @@
  */
 package rafer;
 
+import net.mlhartme.smuggler.cache.FolderData;
+import net.mlhartme.smuggler.cache.ImageData;
+import net.mlhartme.smuggler.cli.Config;
+import net.mlhartme.smuggler.smugmug.Account;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.Node;
@@ -49,26 +53,26 @@ public class Sync {
     private final FileNode rafs;
     private final List<FileNode> backups;
     private final FileNode gpxTracks;
-    // where to sto jpegs; may be null
-    private final FileNode jpegs;
+    // smugmug index or null to disable smugmug sync
+    private final FileNode smugmug;
     private final FileNode inboxTrash;
 
 
     public Sync(World world, Console console) throws MkdirException {
         this(world, console, world.file("/Volumes/UNTITLED"), world.getHome().join("Pictures/Rafer"),
-           world.getHome().join("Timeline"), Arrays.<FileNode>asList(
+           world.getHome().join("Pictures/smugmug.idx"), Arrays.<FileNode>asList(
                             world.file("/Volumes/Data/Bilder"),
                             world.file("/Volumes/Neuerkeller/Bilder")),
                 world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)"),
                 world.getHome().join(".trash/rafer").mkdirOpt());
     }
 
-    public Sync(World world, Console console, FileNode card, FileNode rafs, FileNode jpegs, List<FileNode> backups, FileNode gpxTracks, FileNode inboxTrash) {
+    public Sync(World world, Console console, FileNode card, FileNode rafs, FileNode smugmug, List<FileNode> backups, FileNode gpxTracks, FileNode inboxTrash) {
         this.world = world;
         this.console = console;
         this.card = card;
         this.rafs = rafs;
-        this.jpegs = jpegs;
+        this.smugmug = smugmug;
         this.backups = backups;
         this.gpxTracks = gpxTracks;
         this.inboxTrash = inboxTrash;
@@ -79,20 +83,29 @@ public class Sync {
         int cardCount;
         int backupCount;
         int errors;
+        Account smugmugAccount;
+        FolderData smugmugRoot;
 
         cardCount = 0;
         backupCount = 0;
         directory("rafs", rafs);
-        directory("jpegs", jpegs);
+        if (smugmug != null) {
+            smugmug.checkFile();
+            smugmugAccount = Config.load(world).newSmugmug(world);
+            smugmugRoot = FolderData.load(smugmug);
+        } else {
+            smugmugAccount = null;
+            smugmugRoot = null;
+        }
         process = new ProcessBuilder("caffeinate").start();
         try {
             if (card.isDirectory()) {
                 cardCount++;
-                card();
+                card(smugmugAccount, smugmugRoot);
             } else {
                 console.info.println("no card");
             }
-            inboxSync();
+            smugmugSync(smugmugAccount, smugmugRoot);
             for (FileNode backup : backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
@@ -108,15 +121,17 @@ public class Sync {
             console.info.println();
             console.info.println("done: card " + cardCount + ", backups: " + backupCount);
         } finally {
+            if (smugmugAccount != null) {
+                smugmugRoot.sort();
+                smugmug.writeString(smugmugRoot.toString());
+            }
             process.destroy();
         }
     }
 
-    public void inboxSync() throws IOException {
-        console.info.println("inbox sync ...");
-        wipeJpeg();
-        // TODO
-        // wipeRaf();
+    public void smugmugSync(Account account, FolderData root) throws IOException {
+        console.info.println("smugmug sync ...");
+        smugmugDeletes(account, root);
         console.info.println("done");
     }
 
@@ -130,32 +145,28 @@ public class Sync {
         }
     }
 
-    public void wipeJpeg() throws IOException {
-        String name;
+    public void smugmugDeletes(Account account, FolderData root) throws IOException {
         FileNode raf;
+        Map<String, ImageData> remoteMap;
+        String name;
+        ImageData image;
 
-        for (FileNode jpeg : jpegs.find("**/*" + JPG)) {
-            name = jpeg.getName();
+        remoteMap = new HashMap<>();
+        root.imageMap(remoteMap);
+        for (Map.Entry<String, ImageData> entry : remoteMap.entrySet()) {
+            name = entry.getKey();
+            image = entry.getValue();
             if (getDate(name).before(START_DATE)) {
                 // skip
             } else {
                 raf = getFile(removeExtension(name), rafs, RAF);
                 if (!raf.exists()) {
                     console.info.println("D " + name);
-                    inboxTrash(jpeg);
+                    account.albumImage(image.uri).delete();
+                    if (!image.album.images.remove(image)) {
+                        throw new IllegalStateException();
+                    }
                 }
-            }
-        }
-    }
-
-    public void wipeRaf() throws IOException {
-        String name;
-
-        for (FileNode raf : rafs.find("**/*.RAF")) {
-            name = raf.getName();
-            if (!getFile(removeExtension(name), jpegs, JPG).exists()) {
-                console.info.println("D " + name);
-                inboxTrash(raf);
             }
         }
     }
@@ -213,7 +224,7 @@ public class Sync {
         return str.substring(0, idx);
     }
 
-    public void card() throws IOException {
+    public void card(Account smugmugAccount, FolderData smugmugRoot) throws IOException {
         List<FileNode> cardRafs;
         List<FileNode> downloaded;
         FileNode tmp;
@@ -243,10 +254,12 @@ public class Sync {
         lastTimestamp = Collections.max(values);
         console.info.println("images ranging from " + DAY_FMT.format(new Date(firstTimestamp)) + " to " + DAY_FMT.format(new Date(lastTimestamp)));
         geotags(tmp, firstTimestamp);
-        console.info.println("saving jpegs at " + jpegs + " ...");
-        moveJpegs(tmp, pairs.keySet());
         console.info.println("saving rafs at " + rafs + " ...");
         moveRafs(tmp, pairs);
+        if (smugmug != null) {
+            console.info.println("smugmug upload ...");
+            uploadJpegs(smugmugAccount, smugmugRoot, tmp, pairs.keySet());
+        }
         tmp.deleteDirectory(); // it's empty now
     }
 
@@ -276,13 +289,12 @@ public class Sync {
         return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
-    private void moveJpegs(FileNode tmp, Collection<String> names) throws IOException {
+    private void uploadJpegs(Account account, FolderData root, FileNode tmp, Collection<String> names) throws IOException {
         FileNode dest;
 
         for (String name : names) {
-            dest = getJpgFile(name, jpegs);
-            dest.getParent().mkdirsOpt();
-            tmp.join(name + JPG).move(dest);
+            dest = getJpgFile(name, tmp);
+            root.getOrCreateAlbum(account, dest.getRelative(tmp)).upload(account, tmp.join(name));
         }
     }
 

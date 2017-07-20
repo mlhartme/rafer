@@ -27,23 +27,13 @@ import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.util.Strings;
 import rafer.model.Index;
+import rafer.model.Utils;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Sync {
-    public static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
-    public static final SimpleDateFormat DAY_FMT = new SimpleDateFormat("yyyy/MM/dd");
-    public static final SimpleDateFormat MONTH_FMT = new SimpleDateFormat("yyyy/MM");
-
-    private static final String STARTED = new SimpleDateFormat("yyMMdd-hhmmss").format(new Date());
-
-
-    public static final String RAF = ".RAF";
-    public static final String JPG = ".JPG";
-
     private final World world;
     private final Console console;
     private final rafer.model.Config config;
@@ -119,7 +109,7 @@ public class Sync {
 
     static {
         try {
-            START_DATE = LINKED_FMT.parse("170101");
+            START_DATE = Utils.LINKED_FMT.parse("170101");
         } catch (ParseException e) {
             throw new IllegalStateException(e);
         }
@@ -139,7 +129,7 @@ public class Sync {
             if (getDate(name).before(START_DATE)) {
                 // skip
             } else {
-                raf = getFile(removeExtension(name), config.rafs, RAF);
+                raf = getFile(removeExtension(name), config.rafs, Utils.RAF);
                 if (!raf.exists()) {
                     console.info.println("D " + name);
                     account.albumImage(image.uri).delete();
@@ -156,19 +146,19 @@ public class Sync {
 
         dir = root.getParent().join(".trash." + root.getName());
         dir.mkdirOpt();
-        dir = dir.join(STARTED);
+        dir = dir.join(Utils.STARTED);
         dir.mkdirOpt();
         file.move(dir.join(file.getName()));
     }
 
     private static FileNode getRafFile(String name, FileNode root) {
-        return getFile(name, root, RAF);
+        return getFile(name, root, Utils.RAF);
     }
     public static FileNode getJpgFile(String name, FileNode root) {
-        return getFile(name, root, JPG);
+        return getFile(name, root, Utils.JPG);
     }
     private static FileNode getFile(String name, FileNode root, String ext) {
-        return root.join(MONTH_FMT.format(getDate(name)), name + ext);
+        return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
     }
 
     private static Date getDate(String name) {
@@ -178,7 +168,7 @@ public class Sync {
             throw new IllegalArgumentException();
         }
         try {
-            date = Sync.LINKED_FMT.parse(name.substring(1, 7));
+            date = Utils.LINKED_FMT.parse(name.substring(1, 7));
         } catch (ParseException e) {
             throw new IllegalStateException(e);
         }
@@ -203,7 +193,7 @@ public class Sync {
 
         index = Index.load(destRoot);
         errors = 0;
-        for (Node src : srcRoot.find("**/*" + RAF)) {
+        for (Node src : srcRoot.find("**/*" + Utils.RAF)) {
             String path = src.getRelative(srcRoot);
             if (!index.contains(path)) {
                 dest = destRoot.join(path);
@@ -272,7 +262,7 @@ public class Sync {
                 // ignore, e.g .DS_Store, .dropbox_device, finder previews: ._*
             } else if (!result.contains(other)) {
                 name = other.getName();
-                if (name.endsWith(JPG) && result.contains(other.getParent().join(Strings.removeRight(name, JPG) + RAF))) {
+                if (name.endsWith(Utils.JPG) && result.contains(other.getParent().join(Strings.removeRight(name, Utils.JPG) + Utils.RAF))) {
                     console.verbose.println("found sidecar jpg: " + other);
                 } else {
                     throw new IOException("unexpected file in image folder: " + other);
@@ -289,6 +279,6 @@ public class Sync {
     }
 
     public static FileNode jpg(FileNode raf) {
-        return raf.getParent().join(Strings.removeRight(raf.getName(), RAF) + JPG);
+        return raf.getParent().join(Strings.removeRight(raf.getName(), Utils.RAF) + Utils.JPG);
     }
 }

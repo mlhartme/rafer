@@ -59,7 +59,7 @@ public class Card {
         values = pairs.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);
-        console.info.println("images ranging from " + Sync.DAY_FMT.format(new Date(firstTimestamp)) + " to " + Sync.DAY_FMT.format(new Date(lastTimestamp)));
+        console.info.println("images ranging from " + Utils.DAY_FMT.format(new Date(firstTimestamp)) + " to " + Utils.DAY_FMT.format(new Date(lastTimestamp)));
         geotags(console, gpxTracks, tmp, firstTimestamp);
         console.info.println("saving rafs at " + rafs + " ...");
         moveRafs(tmp, pairs, rafs);
@@ -78,13 +78,13 @@ public class Card {
 
         dates(console, tmp);
         result = new HashMap<>();
-        for (Node raf : tmp.find("*" + Sync.RAF)) {
+        for (Node raf : tmp.find("*" + Utils.RAF)) {
             timestamp = raf.getLastModified();
-            origName = Strings.removeRight(raf.getName(), Sync.RAF);
+            origName = Strings.removeRight(raf.getName(), Utils.RAF);
             linkedName = linked(origName, timestamp);
             result.put(linkedName, timestamp);
-            raf.move(tmp.join(linkedName + Sync.RAF));
-            tmp.join(origName + Sync.JPG).move(tmp.join(linkedName + Sync.JPG));
+            raf.move(tmp.join(linkedName + Utils.RAF));
+            tmp.join(origName + Utils.JPG).move(tmp.join(linkedName + Utils.JPG));
         }
         return result;
     }
@@ -92,7 +92,7 @@ public class Card {
     private void dates(Console console, FileNode dir) throws IOException {
         Launcher launcher;
 
-        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", Sync.RAF);
+        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", Utils.RAF);
         launcher.exec(console.info);
     }
 
@@ -100,7 +100,7 @@ public class Card {
         String id;
 
         id = Strings.removeLeft(pair, "DSCF");
-        return "r" + Sync.LINKED_FMT.format(new Date(timestamp)) + "x" + id;
+        return "r" + Utils.LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
     private void uploadJpegs(Account account, FolderData root, FileNode tmp, Collection<String> names) throws IOException {
@@ -131,8 +131,8 @@ public class Card {
             launcher.arg("-geotag");
             launcher.arg(track.getAbsolute());
         }
-        launcher.arg("-ext", Sync.RAF);
-        launcher.arg("-ext", Sync.JPG);
+        launcher.arg("-ext", Utils.RAF);
+        launcher.arg("-ext", Utils.JPG);
         launcher.arg(".");
         if (tracks.isEmpty()) {
             console.info.println("no matching gpx files");
@@ -147,8 +147,8 @@ public class Card {
         FileNode dest;
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
-            src = srcDir.join(entry.getKey() + Sync.RAF);
-            dest = destDir.join(Sync.MONTH_FMT.format(entry.getValue()), src.getName());
+            src = srcDir.join(entry.getKey() + Utils.RAF);
+            dest = destDir.join(Utils.MONTH_FMT.format(entry.getValue()), src.getName());
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.move(dest); // dont copy - disk might be full

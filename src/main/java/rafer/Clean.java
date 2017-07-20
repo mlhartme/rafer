@@ -18,6 +18,7 @@ package rafer;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.util.Strings;
+import rafer.model.Utils;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -41,7 +42,7 @@ public class Clean {
         dir = world.file("/Volumes/Data/Bilder");
         //dir = world.file("/Volumes/Neuerkeller/Bilder");
         FileNode todo = dir.join("TODO-created-date");
-        Date HEUTE = Sync.LINKED_FMT.parse("170501");
+        Date HEUTE = Utils.LINKED_FMT.parse("170501");
         int count = 0;
         for (FileNode month : dir.find("*/??")) {
             month.checkDirectory();
@@ -73,8 +74,8 @@ public class Clean {
                 if (date.after(HEUTE))  {
                     move(image, todo.join(image.getParent().getParent().getName(), image.getParent().getName(), image.getName()));
                 } else {
-                    full = "r" + Sync.LINKED_FMT.format(date) + "x" + image.getName().substring(8);
-                    FileNode dest = dir.join(Sync.MONTH_FMT.format(date), full);
+                    full = "r" + Utils.LINKED_FMT.format(date) + "x" + image.getName().substring(8);
+                    FileNode dest = dir.join(Utils.MONTH_FMT.format(date), full);
                     if (!image.equals(dest)) {
                         move(image, dest);
                     }

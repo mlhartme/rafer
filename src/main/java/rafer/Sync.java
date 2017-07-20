@@ -26,8 +26,8 @@ import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.util.Strings;
+import rafer.model.Archive;
 import rafer.model.Pairs;
-import rafer.model.Index;
 import rafer.model.Utils;
 
 import java.io.IOException;
@@ -93,11 +93,11 @@ public class Sync {
                 console.info.println("no card");
             }
             smugmugSync(smugmugAccount, smugmugRoot);
-            for (FileNode backup : config.backups) {
-                if (backup.isDirectory()) {
+            for (Archive backup : config.backups) {
+                if (backup.available()) {
                     backupCount++;
                     console.info.println("backup sync with " + backup + " ...");
-                    errors = backup(config.rafs, backup);
+                    errors = backup.add(console, config.rafs);
                     if (errors > 0) {
                         console.info.println("# errors: " + errors);
                     }
@@ -122,7 +122,7 @@ public class Sync {
         console.info.println("done");
     }
 
-    private static final Date START_DATE;
+    public static final Date START_DATE;
 
     static {
         try {
@@ -158,16 +158,6 @@ public class Sync {
         }
     }
 
-    private void backupTrash(FileNode root, FileNode file) throws IOException {
-        FileNode dir;
-
-        dir = root.getParent().join(".trash." + root.getName());
-        dir.mkdirOpt();
-        dir = dir.join(Utils.STARTED);
-        dir.mkdirOpt();
-        file.move(dir.join(file.getName()));
-    }
-
     private static FileNode getRafFile(String name, FileNode root) {
         return getFile(name, root, Utils.RAF);
     }
@@ -178,7 +168,7 @@ public class Sync {
         return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
     }
 
-    private static Date getDate(String name) {
+    public static Date getDate(String name) {
         Date date;
 
         if (!name.startsWith("r") || name.indexOf('x') != 7) {
@@ -200,60 +190,6 @@ public class Sync {
             throw new IllegalArgumentException(str);
         }
         return str.substring(0, idx);
-    }
-
-    private int backup(FileNode srcRoot, FileNode destRoot) throws IOException {
-        Index index;
-        FileNode dest;
-        Date date;
-        int errors;
-
-        index = Index.load(destRoot);
-        errors = 0;
-        for (Node src : srcRoot.find("**/*" + Utils.RAF)) {
-            String path = src.getRelative(srcRoot);
-            if (!index.contains(path)) {
-                dest = destRoot.join(path);
-                dest.getParent().mkdirsOpt();
-                console.info.println("A " + destRoot.getName() + "/" + path);
-                try {
-                    src.copyFile(dest);
-                    dest.setLastModified(src.getLastModified());
-                    index.put(path, src.md5());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    errors++;
-                }
-            }
-        }
-
-        for (String path : index) {
-            FileNode src = srcRoot.join(path);
-            if (!src.exists()) {
-                try {
-                    date = getDate(src.getName());
-                } catch (IllegalArgumentException e) {
-                    // console.info.println(src.getName());
-                    // e.printStackTrace();
-                    // errors++;
-                    continue;
-                }
-                if (date.before(START_DATE)) {
-                    // skip
-                } else {
-                    console.info.println("D " + destRoot.getName() + "/" + path);
-                    try {
-                        backupTrash(destRoot, destRoot.join(path));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        errors++;
-                    }
-                    index.remove(path);
-                }
-            }
-        }
-        index.save(destRoot);
-        return errors;
     }
 
     /** @return raf nodes with jpg sidecar */

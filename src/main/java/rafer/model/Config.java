@@ -19,7 +19,7 @@ import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Config {
@@ -27,7 +27,7 @@ public class Config {
 
     // where to store rafs
     public final FileNode rafs;
-    public final List<FileNode> backups;
+    public final List<Archive> backups;
     public final FileNode gpxTracks;
 
     // smugmug index or null to disable smugmug sync
@@ -39,9 +39,9 @@ public class Config {
         card = new Card(world.file("/Volumes/UNTITLED"));
         rafs = world.getHome().join("Pictures/Rafer");
         smugmug = world.getHome().join("Pictures/smugmug.idx");
-        backups = Arrays.<FileNode>asList(
-                            world.file("/Volumes/Data/Bilder"),
-                            world.file("/Volumes/Neuerkeller/Bilder"));
+        backups = new ArrayList<>();
+        backups.add(new Archive(world.file("/Volumes/Data/Bilder")));
+        backups.add(new Archive(world.file("/Volumes/Neuerkeller/Bilder")));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         inboxTrash = world.getHome().join(".trash/rafer").mkdirOpt();
     }

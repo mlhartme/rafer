@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package rafer;
+package rafer.model;
 
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.file.FileNode;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.*;
 
 /** Creates Index for a backup tree */

@@ -18,6 +18,7 @@ package rafer;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.file.FileNode;
+import rafer.model.Index;
 
 import java.io.IOException;
 

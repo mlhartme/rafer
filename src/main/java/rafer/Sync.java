@@ -27,6 +27,7 @@ import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
+import rafer.model.Index;
 
 import java.io.IOException;
 import java.nio.file.FileStore;

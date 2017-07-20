@@ -25,13 +25,10 @@ import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.fs.filter.Filter;
-import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
 import rafer.model.Index;
 
 import java.io.IOException;
-import java.nio.file.FileStore;
-import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -82,9 +79,9 @@ public class Sync {
         }
         process = new ProcessBuilder("caffeinate").start();
         try {
-            if (config.card.isDirectory()) {
+            if (config.card.available()) {
                 cardCount++;
-                card(smugmugAccount, smugmugRoot);
+                config.card.process(console, smugmugAccount, smugmugRoot, config.gpxTracks, config.rafs, config.smugmug);
             } else {
                 console.info.println("no card");
             }
@@ -154,15 +151,6 @@ public class Sync {
         }
     }
 
-    private void inboxTrash(FileNode file) throws IOException {
-        FileNode dir;
-
-        config.inboxTrash.mkdirOpt();
-        dir = config.inboxTrash.join(STARTED);
-        dir.mkdirOpt();
-        file.move(dir.join(file.getName()));
-    }
-
     private void backupTrash(FileNode root, FileNode file) throws IOException {
         FileNode dir;
 
@@ -176,7 +164,7 @@ public class Sync {
     private static FileNode getRafFile(String name, FileNode root) {
         return getFile(name, root, RAF);
     }
-    private static FileNode getJpgFile(String name, FileNode root) {
+    public static FileNode getJpgFile(String name, FileNode root) {
         return getFile(name, root, JPG);
     }
     private static FileNode getFile(String name, FileNode root, String ext) {
@@ -205,94 +193,6 @@ public class Sync {
             throw new IllegalArgumentException(str);
         }
         return str.substring(0, idx);
-    }
-
-    public void card(Account smugmugAccount, FolderData smugmugRoot) throws IOException {
-        List<FileNode> cardRafs;
-        List<FileNode> downloaded;
-        FileNode tmp;
-        Map<String, Long> pairs;
-        Collection<Long> values;
-        long firstTimestamp;
-        long lastTimestamp;
-        FileNode dcim;
-
-        directory("card", config.card);
-        directory("gpxTracks", config.gpxTracks);
-
-        tmp = world.getTemp().createTempDirectory();
-        dcim = config.card.join("DCIM");
-        cardRafs = findRafs(dcim);
-        if (cardRafs.isEmpty()) {
-            System.out.println("no images");
-            ejectOpt();
-            return;
-        }
-        downloaded = download(cardRafs, tmp);
-        onCardBackup(dcim, downloaded);
-        ejectOpt();
-        pairs = timestamps(tmp);
-        values = pairs.values();
-        firstTimestamp = Collections.min(values);
-        lastTimestamp = Collections.max(values);
-        console.info.println("images ranging from " + DAY_FMT.format(new Date(firstTimestamp)) + " to " + DAY_FMT.format(new Date(lastTimestamp)));
-        geotags(tmp, firstTimestamp);
-        console.info.println("saving rafs at " + config.rafs + " ...");
-        moveRafs(tmp, pairs);
-        if (config.smugmug != null) {
-            console.info.println("smugmug upload ...");
-            uploadJpegs(smugmugAccount, smugmugRoot, tmp, pairs.keySet());
-        }
-        tmp.deleteDirectory(); // it's empty now
-    }
-
-    private Map<String, Long> timestamps(FileNode tmp) throws IOException {
-        Map<String, Long> result;
-        long timestamp;
-        String origName;
-        String linkedName;
-
-        dates(tmp);
-        result = new HashMap<>();
-        for (Node raf : tmp.find("*" + RAF)) {
-            timestamp = raf.getLastModified();
-            origName = Strings.removeRight(raf.getName(), RAF);
-            linkedName = linked(origName, timestamp);
-            result.put(linkedName, timestamp);
-            raf.move(tmp.join(linkedName + RAF));
-            tmp.join(origName + JPG).move(tmp.join(linkedName + JPG));
-        }
-        return result;
-    }
-
-    private String linked(String pair, long timestamp) {
-        String id;
-
-        id = Strings.removeLeft(pair, "DSCF");
-        return "r" + LINKED_FMT.format(new Date(timestamp)) + "x" + id;
-    }
-
-    private void uploadJpegs(Account account, FolderData root, FileNode tmp, Collection<String> names) throws IOException {
-        FileNode dest;
-
-        for (String name : names) {
-            dest = getJpgFile(name, tmp);
-            root.getOrCreateAlbum(account, dest.getRelative(tmp)).upload(account, tmp.join(name));
-        }
-    }
-
-    private void moveRafs(FileNode srcDir, Map<String, Long> pairs) throws IOException {
-        FileNode src;
-        FileNode dest;
-
-        for (Map.Entry<String, Long> entry : pairs.entrySet()) {
-            src = srcDir.join(entry.getKey() + RAF);
-            dest = config.rafs.join(MONTH_FMT.format(entry.getValue()), src.getName());
-            dest.getParent().mkdirsOpt();
-            dest.checkNotExists();
-            src.move(dest); // dont copy - disk might be full
-            dest.setLastModified(entry.getValue());
-        }
     }
 
     private int backup(FileNode srcRoot, FileNode destRoot) throws IOException {
@@ -350,7 +250,7 @@ public class Sync {
     }
 
     /** @return raf nodes with jpg sidecar */
-    private List<FileNode> findRafs(FileNode dcim) throws IOException {
+    public static List<FileNode> findRafs(Console console, FileNode dcim) throws IOException {
         List<FileNode> result;
         String name;
         Filter filter;
@@ -382,121 +282,13 @@ public class Sync {
         return result;
     }
 
-    private static void directories(String name, List<FileNode> dirs) throws IOException {
-        for (FileNode dir : dirs) {
-            directory(name, dir);
-        }
-    }
-
-    private static void directory(String name, FileNode dir) throws IOException {
+    public static void directory(String name, FileNode dir) throws IOException {
         if (!dir.isDirectory()) {
             throw new IOException(name + " not found: " + dir.getAbsolute());
         }
     }
 
-    /** @return srcRafs actually downloaded */
-    private List<FileNode> download(List<FileNode> srcRafs, FileNode dest) throws IOException {
-        List<FileNode> result;
-        FileNode destRaf;
-        FileNode destJpg;
-        FileStore store;
-        long available;
-
-        store = Files.getFileStore(dest.toPath());
-        console.info.println("downloading " + srcRafs.size() + " images to " + dest);
-        result = new ArrayList<>(srcRafs.size());
-        for (FileNode srcRaf : srcRafs) {
-            available = store.getUsableSpace();
-            if (available < 1024l * 1024 * 1024) {
-                System.out.println("WARNING: disk space is low -- download is incomplete!");
-                break;
-            }
-            destRaf = dest.join(srcRaf.getName());
-            destJpg = jpg(destRaf);
-            result.add(srcRaf);
-            srcRaf.copyFile(destRaf);
-            jpg(srcRaf).copyFile(destJpg);
-        }
-        return result;
-    }
-
-    private static FileNode jpg(FileNode raf) {
+    public static FileNode jpg(FileNode raf) {
         return raf.getParent().join(Strings.removeRight(raf.getName(), RAF) + JPG);
-    }
-
-    private void ejectOpt() {
-        if (config.card.getParent().getName().equals("Volumes")) {
-            eject();
-        }
-    }
-
-    private void eject() {
-        try {
-            console.info.println(config.card.getParent().exec("diskutil", "eject", config.card.getName()));
-        } catch (IOException e) {
-            console.info.println("WARNING: eject failed");
-        }
-    }
-
-    private void onCardBackup(FileNode src, List<FileNode> srcRafs) throws IOException {
-        FileNode downloaded;
-        String path;
-        FileNode destRaf;
-
-        downloaded = config.card.join("DOWNLOADED");
-        if (downloaded.isDirectory()) {
-            console.error.println("deleting " + downloaded);
-            downloaded.deleteTree();
-        }
-        downloaded.checkNotExists();
-
-        console.info.println("moving " + srcRafs.size() + " images from " + src + " to " + downloaded);
-        for (FileNode srcRaf : srcRafs) {
-            path = srcRaf.getRelative(src);
-            destRaf = downloaded.join(path);
-            destRaf.getParent().mkdirsOpt();
-            srcRaf.move(destRaf);
-            jpg(srcRaf).move(jpg(destRaf));
-        }
-        if (findRafs(src).isEmpty()) {
-            console.info.println("complete download, removing " + src);
-        }
-    }
-
-    private void geotags(FileNode dir, long firstTimestamp) throws IOException {
-        List<FileNode> tracks;
-        Launcher launcher;
-
-        tracks = new ArrayList<>();
-        for (Node track : config.gpxTracks.list()) {
-            if (track.getName().endsWith(".gpx")) {
-                if (track.getLastModified() > firstTimestamp) {
-                    tracks.add((FileNode) track);
-                }
-            }
-        }
-        launcher = new Launcher(dir, "exiftool", "-overwrite_original");
-        launcher.arg("-Artist=Michael Hartmeier", "-Copyright=All rights reserved");
-        launcher.arg("-P", "-api", "GeoMaxIntSecs=43200"); // 12 Stunden, weil er keine neuen Punkte speichert, wenn man sich nicht bewegt
-        for (FileNode track : tracks) {
-            launcher.arg("-geotag");
-            launcher.arg(track.getAbsolute());
-        }
-        launcher.arg("-ext", RAF);
-        launcher.arg("-ext", JPG);
-        launcher.arg(".");
-        if (tracks.isEmpty()) {
-            console.info.println("no matching gpx files");
-        } else {
-            console.info.println(launcher.toString());
-            launcher.exec(console.info);
-        }
-    }
-
-    private void dates(FileNode dir) throws IOException {
-        Launcher launcher;
-
-        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", RAF);
-        launcher.exec(console.info);
     }
 }

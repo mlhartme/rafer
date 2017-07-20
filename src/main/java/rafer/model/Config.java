@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Config {
-    public final FileNode card;
+    public final Card card;
 
     // where to store rafs
     public final FileNode rafs;
@@ -36,7 +36,7 @@ public class Config {
 
 
     public Config(World world) throws MkdirException {
-        card = world.file("/Volumes/UNTITLED");
+        card = new Card(world.file("/Volumes/UNTITLED"));
         rafs = world.getHome().join("Pictures/Rafer");
         smugmug = world.getHome().join("Pictures/smugmug.idx");
         backups = Arrays.<FileNode>asList(

@@ -26,7 +26,7 @@ import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.util.Strings;
-import rafer.model.Inbox;
+import rafer.model.Pairs;
 import rafer.model.Index;
 import rafer.model.Utils;
 
@@ -78,7 +78,15 @@ public class Sync {
                 if (downloaded.isEmpty()) {
                     console.info.println("no images");
                 } else {
-                    new Inbox(tmp).process(console, smugmugAccount, smugmugRoot, config.gpxTracks, config.rafs, config.smugmug);
+                    Pairs inbox;
+
+                    inbox = Pairs.normalize(console, tmp);
+                    console.info.println("adding geotags ...");
+                    inbox.geotags(console, config.gpxTracks);
+                    console.info.println("saving rafs at " + config.rafs + " ...");
+                    inbox.moveRafs(config.rafs);
+                    console.info.println("smugmug upload ...");
+                    inbox.smugmugUpload(smugmugAccount, smugmugRoot);
                     tmp.deleteDirectory();
                 }
             } else {

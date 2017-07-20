@@ -21,7 +21,9 @@ public class Card {
         return directory.isDirectory();
     }
 
-    /** @return list of raf files in dest */
+    /** Throws an error for non-pairs
+     * @return list of raf files in dest
+     */
     public List<FileNode> download(Console console, FileNode dest) throws IOException {
         List<FileNode> cardRafs;
         List<FileNode> downloaded;

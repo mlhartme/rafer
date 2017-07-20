@@ -8,6 +8,7 @@ import rafer.Sync;
 import java.io.IOException;
 import java.util.Date;
 
+/** Directory with an Index and Image files */
 public class Archive {
     private final FileNode destRoot;
 
@@ -17,6 +18,23 @@ public class Archive {
 
     public boolean available() {
         return destRoot.isDirectory();
+    }
+
+    public void verify(Console console, boolean md5) throws IOException {
+        Index old;
+        Index current;
+
+        destRoot.checkDirectory();
+        old = Index.load(destRoot);
+        current = old.verify(destRoot, md5, console);
+        if (current.equals(old)) {
+            console.info.println("ok: " + destRoot);
+        } else {
+            console.readline("press return to update index, ctrl-c to abort");
+            current.save(destRoot);
+        }
+        console.info.println("files: " + current.size());
+        console.info.println("extensions: " + current.extensions());
     }
 
     public int add(Console console, FileNode srcRoot) throws IOException {

@@ -18,6 +18,7 @@ package rafer;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.file.FileNode;
+import rafer.model.Archive;
 import rafer.model.Index;
 
 import java.io.IOException;
@@ -34,19 +35,6 @@ public class Verify {
     }
 
     public void run() throws IOException {
-        Index old;
-        Index current;
-
-        dir.checkDirectory();
-        old = Index.load(dir);
-        current = old.verify(dir, md5, console);
-        if (current.equals(old)) {
-            console.info.println("ok: " + dir);
-        } else {
-            console.readline("press return to update index, ctrl-c to abort");
-            current.save(dir);
-        }
-        console.info.println("files: " + current.size());
-        console.info.println("extensions: " + current.extensions());
+        new Archive(dir).verify(console, md5);
     }
 }

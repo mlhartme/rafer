@@ -58,7 +58,9 @@ public class Sync {
 
         cardCount = 0;
         backupCount = 0;
-        directory("rafs", config.rafs);
+        if (config.rafs.available()) {
+            throw new IOException("local archive not available");
+        }
         if (config.smugmug != null) {
             config.smugmug.checkFile();
             smugmugAccount = Config.load(world).newSmugmug(world);
@@ -76,15 +78,15 @@ public class Sync {
                 if (downloaded.isEmpty()) {
                     console.info.println("no images");
                 } else {
-                    Pairs inbox;
+                    Pairs pairs;
 
-                    inbox = Pairs.normalize(console, tmp);
+                    pairs = Pairs.normalize(console, tmp);
                     console.info.println("adding geotags ...");
-                    inbox.geotags(console, config.gpxTracks);
+                    pairs.geotags(console, config.gpxTracks);
                     console.info.println("saving rafs at " + config.rafs + " ...");
-                    inbox.moveRafs(config.rafs);
+                    pairs.moveRafs(config.rafs);
                     console.info.println("smugmug upload ...");
-                    inbox.smugmugUpload(smugmugAccount, smugmugRoot);
+                    pairs.smugmugUpload(smugmugAccount, smugmugRoot);
                     tmp.deleteDirectory();
                 }
             } else {
@@ -144,7 +146,7 @@ public class Sync {
             if (getDate(name).before(START_DATE)) {
                 // skip
             } else {
-                raf = getFile(removeExtension(name), config.rafs, Utils.RAF);
+                raf = config.rafs.getFile(removeExtension(name), Utils.RAF);
                 if (!raf.exists()) {
                     console.info.println("D " + name);
                     account.albumImage(image.uri).delete();
@@ -159,7 +161,7 @@ public class Sync {
     public static FileNode getJpgFile(String name, FileNode root) {
         return getFile(name, root, Utils.JPG);
     }
-    private static FileNode getFile(String name, FileNode root, String ext) {
+    public static FileNode getFile(String name, FileNode root, String ext) {
         return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
     }
 
@@ -177,7 +179,7 @@ public class Sync {
         return date;
     }
 
-    private static String removeExtension(String str) {
+    public static String removeExtension(String str) {
         int idx;
 
         idx = str.lastIndexOf('.');

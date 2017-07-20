@@ -25,8 +25,7 @@ import java.util.List;
 public class Config {
     public final Card card;
 
-    // where to store rafs
-    public final FileNode rafs;
+    public final Archive rafs;
     public final List<Archive> backups;
     public final FileNode gpxTracks;
 
@@ -37,7 +36,7 @@ public class Config {
 
     public Config(World world) throws MkdirException {
         card = new Card(world.file("/Volumes/UNTITLED"));
-        rafs = world.getHome().join("Pictures/Rafer");
+        rafs = new Archive("local", world.getHome().join("Pictures/Rafer"));
         smugmug = world.getHome().join("Pictures/smugmug.idx");
         backups = new ArrayList<>();
         backups.add(new Archive("data", world.file("/Volumes/Data/Bilder")));

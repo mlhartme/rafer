@@ -39,7 +39,7 @@ public class Archive {
         console.info.println("extensions: " + current.extensions());
     }
 
-    public int add(Console console, FileNode srcRoot) throws IOException {
+    public int add(Console console, Archive from) throws IOException {
         Index index;
         FileNode dest;
         Date date;
@@ -47,8 +47,8 @@ public class Archive {
 
         index = Index.load(directory);
         errors = 0;
-        for (Node src : srcRoot.find("**/*" + Utils.RAF)) {
-            String path = src.getRelative(srcRoot);
+        for (Node src : from.directory.find("**/*" + Utils.RAF)) {
+            String path = src.getRelative(from.directory);
             if (!index.contains(path)) {
                 dest = directory.join(path);
                 dest.getParent().mkdirsOpt();
@@ -65,7 +65,7 @@ public class Archive {
         }
 
         for (String path : index) {
-            FileNode src = srcRoot.join(path);
+            FileNode src = from.directory.join(path);
             if (!src.exists()) {
                 try {
                     date = Sync.getDate(src.getName());
@@ -105,5 +105,19 @@ public class Archive {
 
     public int images() throws IOException {
         return Index.load(directory).size();
+    }
+
+    public void moveInfo(FileNode src, Long modified) throws IOException {
+        FileNode dest;
+
+        dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
+        dest.getParent().mkdirsOpt();
+        dest.checkNotExists();
+        src.move(dest); // dont copy - disk might be full
+        dest.setLastModified(modified);
+    }
+
+    public FileNode getFile(String basename, String ext) {
+        return Sync.getFile(basename, directory, ext);
     }
 }

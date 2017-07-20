@@ -112,17 +112,12 @@ public class Pairs {
 
     //--
 
-    public void moveRafs(FileNode destDir) throws IOException {
+    public void moveRafs(Archive dest) throws IOException {
         FileNode src;
-        FileNode dest;
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = directory.join(entry.getKey() + Utils.RAF);
-            dest = destDir.join(Utils.MONTH_FMT.format(entry.getValue()), src.getName());
-            dest.getParent().mkdirsOpt();
-            dest.checkNotExists();
-            src.move(dest); // dont copy - disk might be full
-            dest.setLastModified(entry.getValue());
+            dest.moveInfo(src, entry.getValue());
         }
     }
 

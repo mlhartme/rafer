@@ -17,24 +17,29 @@ package rafer;
 
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
-import net.oneandone.sushi.fs.file.FileNode;
+import net.oneandone.sushi.fs.World;
 import rafer.model.Archive;
-import rafer.model.Index;
 
 import java.io.IOException;
 
-public class Verify {
+public class Status {
+    private final World world;
     private final Console console;
-    private final boolean md5;
-    private final FileNode dir;
+    private final rafer.model.Config config;
 
-    public Verify(Console console, boolean md5, FileNode dir) throws MkdirException {
+    public Status(World world, Console console) throws MkdirException {
+        this(world, console, new rafer.model.Config(world));
+    }
+
+    public Status(World world, Console console, rafer.model.Config config) {
+        this.world = world;
         this.console = console;
-        this.md5 = md5;
-        this.dir = dir;
+        this.config = config;
     }
 
     public void run() throws IOException {
-        new Archive("tmp", dir).verify(console, md5);
+        for (Archive archive : config.backups) {
+            console.info.println(archive.name + ": " + (archive.available() ? "(not available)" : Integer.toString(archive.images())));
+        }
     }
 }

@@ -40,8 +40,8 @@ public class Config {
         rafs = world.getHome().join("Pictures/Rafer");
         smugmug = world.getHome().join("Pictures/smugmug.idx");
         backups = new ArrayList<>();
-        backups.add(new Archive(world.file("/Volumes/Data/Bilder")));
-        backups.add(new Archive(world.file("/Volumes/Neuerkeller/Bilder")));
+        backups.add(new Archive("data", world.file("/Volumes/Data/Bilder")));
+        backups.add(new Archive("neuerkeller", world.file("/Volumes/Neuerkeller/Bilder")));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         inboxTrash = world.getHome().join(".trash/rafer").mkdirOpt();
     }

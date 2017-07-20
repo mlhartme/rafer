@@ -10,28 +10,30 @@ import java.util.Date;
 
 /** Directory with an Index and Image files */
 public class Archive {
-    private final FileNode destRoot;
+    public final String name;
+    private final FileNode directory;
 
-    public Archive(FileNode destRoot) {
-        this.destRoot = destRoot;
+    public Archive(String name, FileNode directory) {
+        this.name = name;
+        this.directory = directory;
     }
 
     public boolean available() {
-        return destRoot.isDirectory();
+        return directory.isDirectory();
     }
 
     public void verify(Console console, boolean md5) throws IOException {
         Index old;
         Index current;
 
-        destRoot.checkDirectory();
-        old = Index.load(destRoot);
-        current = old.verify(destRoot, md5, console);
+        directory.checkDirectory();
+        old = Index.load(directory);
+        current = old.verify(directory, md5, console);
         if (current.equals(old)) {
-            console.info.println("ok: " + destRoot);
+            console.info.println("ok: " + directory);
         } else {
             console.readline("press return to update index, ctrl-c to abort");
-            current.save(destRoot);
+            current.save(directory);
         }
         console.info.println("files: " + current.size());
         console.info.println("extensions: " + current.extensions());
@@ -43,14 +45,14 @@ public class Archive {
         Date date;
         int errors;
 
-        index = Index.load(destRoot);
+        index = Index.load(directory);
         errors = 0;
         for (Node src : srcRoot.find("**/*" + Utils.RAF)) {
             String path = src.getRelative(srcRoot);
             if (!index.contains(path)) {
-                dest = destRoot.join(path);
+                dest = directory.join(path);
                 dest.getParent().mkdirsOpt();
-                console.info.println("A " + destRoot.getName() + "/" + path);
+                console.info.println("A " + directory.getName() + "/" + path);
                 try {
                     src.copyFile(dest);
                     dest.setLastModified(src.getLastModified());
@@ -76,9 +78,9 @@ public class Archive {
                 if (date.before(Sync.START_DATE)) {
                     // skip
                 } else {
-                    console.info.println("D " + destRoot.getName() + "/" + path);
+                    console.info.println("D " + directory.getName() + "/" + path);
                     try {
-                        trash(destRoot, destRoot.join(path));
+                        trash(directory, directory.join(path));
                     } catch (IOException e) {
                         e.printStackTrace();
                         errors++;
@@ -87,7 +89,7 @@ public class Archive {
                 }
             }
         }
-        index.save(destRoot);
+        index.save(directory);
         return errors;
     }
 
@@ -101,4 +103,7 @@ public class Archive {
         file.move(dir.join(file.getName()));
     }
 
+    public int images() throws IOException {
+        return Index.load(directory).size();
+    }
 }

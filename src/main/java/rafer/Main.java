@@ -44,6 +44,7 @@ public final class Main {
                         .addDefault(new Help(console, help()), "help")
                         .add(PackageVersion.class, "version")
                         .add(Sync.class, "sync")
+                        .add(Status.class, "status")
                         .add(Verify.class, "verify -md5 dir");
             try {
                 result = cli.run(args);

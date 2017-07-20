@@ -49,34 +49,16 @@ public class Sync {
 
     private final World world;
     private final Console console;
-    private final FileNode card;
-    // where to store rafs
-    private final FileNode rafs;
-    private final List<FileNode> backups;
-    private final FileNode gpxTracks;
-    // smugmug index or null to disable smugmug sync
-    private final FileNode smugmug;
-    private final FileNode inboxTrash;
-
+    private final rafer.model.Config config;
 
     public Sync(World world, Console console) throws MkdirException {
-        this(world, console, world.file("/Volumes/UNTITLED"), world.getHome().join("Pictures/Rafer"),
-           world.getHome().join("Pictures/smugmug.idx"), Arrays.<FileNode>asList(
-                            world.file("/Volumes/Data/Bilder"),
-                            world.file("/Volumes/Neuerkeller/Bilder")),
-                world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)"),
-                world.getHome().join(".trash/rafer").mkdirOpt());
+        this(world, console, new rafer.model.Config(world));
     }
 
-    public Sync(World world, Console console, FileNode card, FileNode rafs, FileNode smugmug, List<FileNode> backups, FileNode gpxTracks, FileNode inboxTrash) {
+    public Sync(World world, Console console, rafer.model.Config config) {
         this.world = world;
         this.console = console;
-        this.card = card;
-        this.rafs = rafs;
-        this.smugmug = smugmug;
-        this.backups = backups;
-        this.gpxTracks = gpxTracks;
-        this.inboxTrash = inboxTrash;
+        this.config = config;
     }
 
     public void run() throws IOException {
@@ -89,29 +71,29 @@ public class Sync {
 
         cardCount = 0;
         backupCount = 0;
-        directory("rafs", rafs);
-        if (smugmug != null) {
-            smugmug.checkFile();
+        directory("rafs", config.rafs);
+        if (config.smugmug != null) {
+            config.smugmug.checkFile();
             smugmugAccount = Config.load(world).newSmugmug(world);
-            smugmugRoot = FolderData.load(smugmug);
+            smugmugRoot = FolderData.load(config.smugmug);
         } else {
             smugmugAccount = null;
             smugmugRoot = null;
         }
         process = new ProcessBuilder("caffeinate").start();
         try {
-            if (card.isDirectory()) {
+            if (config.card.isDirectory()) {
                 cardCount++;
                 card(smugmugAccount, smugmugRoot);
             } else {
                 console.info.println("no card");
             }
             smugmugSync(smugmugAccount, smugmugRoot);
-            for (FileNode backup : backups) {
+            for (FileNode backup : config.backups) {
                 if (backup.isDirectory()) {
                     backupCount++;
                     console.info.println("backup sync with " + backup + " ...");
-                    errors = backup(rafs, backup);
+                    errors = backup(config.rafs, backup);
                     if (errors > 0) {
                         console.info.println("# errors: " + errors);
                     }
@@ -124,7 +106,7 @@ public class Sync {
         } finally {
             if (smugmugAccount != null) {
                 smugmugRoot.sort();
-                smugmug.writeString(smugmugRoot.toString());
+                config.smugmug.writeString(smugmugRoot.toString());
             }
             process.destroy();
         }
@@ -160,7 +142,7 @@ public class Sync {
             if (getDate(name).before(START_DATE)) {
                 // skip
             } else {
-                raf = getFile(removeExtension(name), rafs, RAF);
+                raf = getFile(removeExtension(name), config.rafs, RAF);
                 if (!raf.exists()) {
                     console.info.println("D " + name);
                     account.albumImage(image.uri).delete();
@@ -175,8 +157,8 @@ public class Sync {
     private void inboxTrash(FileNode file) throws IOException {
         FileNode dir;
 
-        inboxTrash.mkdirOpt();
-        dir = inboxTrash.join(STARTED);
+        config.inboxTrash.mkdirOpt();
+        dir = config.inboxTrash.join(STARTED);
         dir.mkdirOpt();
         file.move(dir.join(file.getName()));
     }
@@ -235,11 +217,11 @@ public class Sync {
         long lastTimestamp;
         FileNode dcim;
 
-        directory("card", card);
-        directory("gpxTracks", gpxTracks);
+        directory("card", config.card);
+        directory("gpxTracks", config.gpxTracks);
 
         tmp = world.getTemp().createTempDirectory();
-        dcim = card.join("DCIM");
+        dcim = config.card.join("DCIM");
         cardRafs = findRafs(dcim);
         if (cardRafs.isEmpty()) {
             System.out.println("no images");
@@ -255,9 +237,9 @@ public class Sync {
         lastTimestamp = Collections.max(values);
         console.info.println("images ranging from " + DAY_FMT.format(new Date(firstTimestamp)) + " to " + DAY_FMT.format(new Date(lastTimestamp)));
         geotags(tmp, firstTimestamp);
-        console.info.println("saving rafs at " + rafs + " ...");
+        console.info.println("saving rafs at " + config.rafs + " ...");
         moveRafs(tmp, pairs);
-        if (smugmug != null) {
+        if (config.smugmug != null) {
             console.info.println("smugmug upload ...");
             uploadJpegs(smugmugAccount, smugmugRoot, tmp, pairs.keySet());
         }
@@ -305,7 +287,7 @@ public class Sync {
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = srcDir.join(entry.getKey() + RAF);
-            dest = rafs.join(MONTH_FMT.format(entry.getValue()), src.getName());
+            dest = config.rafs.join(MONTH_FMT.format(entry.getValue()), src.getName());
             dest.getParent().mkdirsOpt();
             dest.checkNotExists();
             src.move(dest); // dont copy - disk might be full
@@ -443,14 +425,14 @@ public class Sync {
     }
 
     private void ejectOpt() {
-        if (card.getParent().getName().equals("Volumes")) {
+        if (config.card.getParent().getName().equals("Volumes")) {
             eject();
         }
     }
 
     private void eject() {
         try {
-            console.info.println(card.getParent().exec("diskutil", "eject", card.getName()));
+            console.info.println(config.card.getParent().exec("diskutil", "eject", config.card.getName()));
         } catch (IOException e) {
             console.info.println("WARNING: eject failed");
         }
@@ -461,7 +443,7 @@ public class Sync {
         String path;
         FileNode destRaf;
 
-        downloaded = card.join("DOWNLOADED");
+        downloaded = config.card.join("DOWNLOADED");
         if (downloaded.isDirectory()) {
             console.error.println("deleting " + downloaded);
             downloaded.deleteTree();
@@ -486,7 +468,7 @@ public class Sync {
         Launcher launcher;
 
         tracks = new ArrayList<>();
-        for (Node track : gpxTracks.list()) {
+        for (Node track : config.gpxTracks.list()) {
             if (track.getName().endsWith(".gpx")) {
                 if (track.getLastModified() > firstTimestamp) {
                     tracks.add((FileNode) track);

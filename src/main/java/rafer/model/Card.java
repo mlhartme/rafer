@@ -31,43 +31,42 @@ public class Card {
         return directory.isDirectory();
     }
 
-    public void process(Console console, Account smugmugAccount, FolderData smugmugRoot, FileNode gpxTracks, FileNode rafs, FileNode smugmug) throws IOException {
+    /** @return list of raf files in dest */
+    public List<FileNode> download(Console console, FileNode dest) throws IOException {
         List<FileNode> cardRafs;
         List<FileNode> downloaded;
-        FileNode tmp;
+        FileNode dcim;
+
+        Sync.directory("card", directory);
+
+        dcim = directory.join("DCIM");
+        cardRafs = Sync.findRafs(console, dcim);
+        downloaded = download(console, cardRafs, dest);
+        onCardBackup(console, dcim, downloaded);
+        ejectOpt(console);
+        return downloaded;
+    }
+
+    public void process(FileNode images, Console console, Account smugmugAccount, FolderData smugmugRoot, FileNode gpxTracks, FileNode rafs, FileNode smugmug) throws IOException {
         Map<String, Long> pairs;
         Collection<Long> values;
         long firstTimestamp;
         long lastTimestamp;
-        FileNode dcim;
 
-        Sync.directory("card", directory);
         Sync.directory("gpxTracks", gpxTracks);
-
-        tmp = directory.getWorld().getTemp().createTempDirectory();
-        dcim = directory.join("DCIM");
-        cardRafs = Sync.findRafs(console, dcim);
-        if (cardRafs.isEmpty()) {
-            console.info.println("no images");
-            ejectOpt(console);
-            return;
-        }
-        downloaded = download(console, cardRafs, tmp);
-        onCardBackup(console, dcim, downloaded);
-        ejectOpt(console);
-        pairs = timestamps(console, tmp);
+        pairs = timestamps(console, images);
         values = pairs.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);
         console.info.println("images ranging from " + Utils.DAY_FMT.format(new Date(firstTimestamp)) + " to " + Utils.DAY_FMT.format(new Date(lastTimestamp)));
-        geotags(console, gpxTracks, tmp, firstTimestamp);
+        geotags(console, gpxTracks, images, firstTimestamp);
         console.info.println("saving rafs at " + rafs + " ...");
-        moveRafs(tmp, pairs, rafs);
+        moveRafs(images, pairs, rafs);
         if (smugmug != null) {
             console.info.println("smugmug upload ...");
-            uploadJpegs(smugmugAccount, smugmugRoot, tmp, pairs.keySet());
+            uploadJpegs(smugmugAccount, smugmugRoot, images, pairs.keySet());
         }
-        tmp.deleteDirectory(); // it's empty now
+        images.deleteDirectory(); // it's empty now
     }
 
     private Map<String, Long> timestamps(Console console, FileNode tmp) throws IOException {

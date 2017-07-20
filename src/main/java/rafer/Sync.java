@@ -55,6 +55,7 @@ public class Sync {
         int errors;
         Account smugmugAccount;
         FolderData smugmugRoot;
+        FileNode tmp;
 
         cardCount = 0;
         backupCount = 0;
@@ -71,7 +72,13 @@ public class Sync {
         try {
             if (config.card.available()) {
                 cardCount++;
-                config.card.process(console, smugmugAccount, smugmugRoot, config.gpxTracks, config.rafs, config.smugmug);
+                tmp = world.getTemp().createTempDirectory();
+                List<FileNode> downloaded = config.card.download(console, tmp);
+                if (downloaded.isEmpty()) {
+                    console.info.println("no images");
+                } else {
+                    config.card.process(tmp, console, smugmugAccount, smugmugRoot, config.gpxTracks, config.rafs, config.smugmug);
+                }
             } else {
                 console.info.println("no card");
             }

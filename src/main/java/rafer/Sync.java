@@ -21,10 +21,8 @@ import net.mlhartme.smuggler.cli.Config;
 import net.mlhartme.smuggler.smugmug.Account;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
-import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.util.Strings;
 import rafer.model.Archive;
 import rafer.model.Pairs;
@@ -158,9 +156,6 @@ public class Sync {
         }
     }
 
-    private static FileNode getRafFile(String name, FileNode root) {
-        return getFile(name, root, Utils.RAF);
-    }
     public static FileNode getJpgFile(String name, FileNode root) {
         return getFile(name, root, Utils.JPG);
     }
@@ -190,39 +185,6 @@ public class Sync {
             throw new IllegalArgumentException(str);
         }
         return str.substring(0, idx);
-    }
-
-    /** @return raf nodes with jpg sidecar */
-    public static List<FileNode> findRafs(Console console, FileNode dcim) throws IOException {
-        List<FileNode> result;
-        String name;
-        Filter filter;
-
-        dcim.checkDirectory();
-        filter = dcim.getWorld().filter();
-        filter.include("**/*.RAF");
-        filter.exclude("**/._*.RAF");
-        result = dcim.find(filter);
-        for (Node raf : result) {
-            if (!jpg((FileNode) raf).exists()) {
-                throw new IOException("missing jpg for " + raf);
-            }
-        }
-        for (Node other : dcim.find("**/*")) {
-            if (other.isDirectory()) {
-                // ignore
-            } else if (other.getName().startsWith(".")) {
-                // ignore, e.g .DS_Store, .dropbox_device, finder previews: ._*
-            } else if (!result.contains(other)) {
-                name = other.getName();
-                if (name.endsWith(Utils.JPG) && result.contains(other.getParent().join(Strings.removeRight(name, Utils.JPG) + Utils.RAF))) {
-                    console.verbose.println("found sidecar jpg: " + other);
-                } else {
-                    throw new IOException("unexpected file in image folder: " + other);
-                }
-            }
-        }
-        return result;
     }
 
     public static void directory(String name, FileNode dir) throws IOException {

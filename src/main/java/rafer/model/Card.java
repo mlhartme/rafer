@@ -1,7 +1,10 @@
 package rafer.model;
 
 import net.oneandone.inline.Console;
+import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
+import net.oneandone.sushi.fs.filter.Filter;
+import net.oneandone.sushi.util.Strings;
 import rafer.Sync;
 
 import java.io.IOException;
@@ -32,7 +35,7 @@ public class Card {
         Sync.directory("card", directory);
 
         dcim = directory.join("DCIM");
-        cardRafs = Sync.findRafs(console, dcim);
+        cardRafs = findRafs(console, dcim);
         downloaded = download(console, cardRafs, dest);
         onCardBackup(console, dcim, downloaded);
         ejectOpt(console);
@@ -100,9 +103,41 @@ public class Card {
             srcRaf.move(destRaf);
             Sync.jpg(srcRaf).move(Sync.jpg(destRaf));
         }
-        if (Sync.findRafs(console, src).isEmpty()) {
+        if (findRafs(console, src).isEmpty()) {
             console.info.println("complete download, removing " + src);
         }
     }
 
+    /** @return raf nodes with jpg sidecar */
+    private static List<FileNode> findRafs(Console console, FileNode dcim) throws IOException {
+        List<FileNode> result;
+        String name;
+        Filter filter;
+
+        dcim.checkDirectory();
+        filter = dcim.getWorld().filter();
+        filter.include("**/*.RAF");
+        filter.exclude("**/._*.RAF");
+        result = dcim.find(filter);
+        for (Node raf : result) {
+            if (!Sync.jpg((FileNode) raf).exists()) {
+                throw new IOException("missing jpg for " + raf);
+            }
+        }
+        for (Node other : dcim.find("**/*")) {
+            if (other.isDirectory()) {
+                // ignore
+            } else if (other.getName().startsWith(".")) {
+                // ignore, e.g .DS_Store, .dropbox_device, finder previews: ._*
+            } else if (!result.contains(other)) {
+                name = other.getName();
+                if (name.endsWith(Utils.JPG) && result.contains(other.getParent().join(Strings.removeRight(name, Utils.JPG) + Utils.RAF))) {
+                    console.verbose.println("found sidecar jpg: " + other);
+                } else {
+                    throw new IOException("unexpected file in image folder: " + other);
+                }
+            }
+        }
+        return result;
+    }
 }

@@ -22,22 +22,16 @@ public class Archive implements AutoCloseable {
         this.index = index;
     }
 
-    // TODO
-    public void verify(Console console, boolean md5) throws IOException {
-        Index old;
-        Index current;
 
-        directory.checkDirectory();
-        old = Index.load(directory);
-        current = old.verify(directory, md5, console);
-        if (current.equals(old)) {
-            console.info.println("ok: " + directory);
-        } else {
-            console.readline("press return to update index, ctrl-c to abort");
-            current.save(directory);
-        }
-        console.info.println("files: " + current.size());
-        console.info.println("extensions: " + current.extensions());
+    public void moveInto(FileNode src, Long modified) throws IOException {
+        FileNode dest;
+
+        dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
+        dest.getParent().mkdirsOpt();
+        dest.checkNotExists();
+        src.move(dest); // dont copy - disk might be full
+        dest.setLastModified(modified);
+        index.put(dest.getRelative(directory), dest.md5());
     }
 
     public int add(Console console, Archive from) throws IOException {
@@ -91,6 +85,24 @@ public class Archive implements AutoCloseable {
         return errors;
     }
 
+    // TODO
+    public void verify(Console console, boolean md5) throws IOException {
+        Index old;
+        Index current;
+
+        directory.checkDirectory();
+        old = Index.load(directory);
+        current = old.verify(directory, md5, console);
+        if (current.equals(old)) {
+            console.info.println("ok: " + directory);
+        } else {
+            console.readline("press return to update index, ctrl-c to abort");
+            current.save(directory);
+        }
+        console.info.println("files: " + current.size());
+        console.info.println("extensions: " + current.extensions());
+    }
+
     private void trash(FileNode root, FileNode file) throws IOException {
         FileNode dir;
 
@@ -103,16 +115,6 @@ public class Archive implements AutoCloseable {
 
     public int images() throws IOException {
         return Index.load(directory).size();
-    }
-
-    public void moveInfo(FileNode src, Long modified) throws IOException {
-        FileNode dest;
-
-        dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
-        dest.getParent().mkdirsOpt();
-        dest.checkNotExists();
-        src.move(dest); // dont copy - disk might be full
-        dest.setLastModified(modified);
     }
 
     public FileNode getFile(String basename, String ext) {

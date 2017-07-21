@@ -2,6 +2,8 @@ package rafer.model;
 
 import net.oneandone.sushi.fs.file.FileNode;
 
+import java.io.IOException;
+
 /** Archive Factory. */
 public class Volume {
     public final String name;
@@ -16,8 +18,8 @@ public class Volume {
         return directory.isDirectory();
     }
 
-    public Archive open() {
-        return new Archive(this, directory);
+    public Archive open() throws IOException {
+        return Archive.open(this, directory);
     }
 
     public String toString() {

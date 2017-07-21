@@ -10,14 +10,21 @@ import java.util.Date;
 
 /** Directory with an Index and Image files */
 public class Archive implements AutoCloseable {
-    public final Volume volume;
-    private final FileNode directory;
-
-    public Archive(Volume volume, FileNode directory) {
-        this.volume = volume;
-        this.directory = directory;
+    public static Archive open(Volume volume, FileNode directory) throws IOException {
+        return new Archive(volume, directory, Index.load(directory));
     }
 
+    public final Volume volume;
+    private final FileNode directory;
+    private final Index index;
+
+    private Archive(Volume volume, FileNode directory, Index index) {
+        this.volume = volume;
+        this.directory = directory;
+        this.index = index;
+    }
+
+    // TODO
     public void verify(Console console, boolean md5) throws IOException {
         Index old;
         Index current;
@@ -36,12 +43,10 @@ public class Archive implements AutoCloseable {
     }
 
     public int add(Console console, Archive from) throws IOException {
-        Index index;
         FileNode dest;
         Date date;
         int errors;
 
-        index = Index.load(directory);
         errors = 0;
         for (Node src : from.directory.find("**/*" + Utils.RAF)) {
             String path = src.getRelative(from.directory);
@@ -85,7 +90,6 @@ public class Archive implements AutoCloseable {
                 }
             }
         }
-        index.save(directory);
         return errors;
     }
 
@@ -118,7 +122,7 @@ public class Archive implements AutoCloseable {
     }
 
     @Override
-    public void close() {
-        // TODO
+    public void close() throws IOException {
+        index.save(directory);
     }
 }

@@ -10,20 +10,24 @@ import java.util.Date;
 
 /** Directory with an Index and Image files */
 public class Archive implements AutoCloseable {
-    public static Archive open(FileNode directory) throws IOException {
-        return new Archive(directory, Index.load(directory));
+    public static Archive open(FileNode directory, Date start, Date end) throws IOException {
+        return new Archive(directory, Index.load(directory), start, end);
     }
 
     private final FileNode directory;
     private final Index index;
+    private final Date start;
+    private final Date end;
 
-    private Archive(FileNode directory, Index index) {
+    private Archive(FileNode directory, Index index, Date start, Date end) {
         this.directory = directory;
         this.index = index;
+        this.start = start;
+        this.end = end;
     }
 
 
-    public void moveInto(FileNode src, Long modified) throws IOException {
+    public void moveInto(FileNode src, long modified) throws IOException {
         FileNode dest;
 
         dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
@@ -83,6 +87,31 @@ public class Archive implements AutoCloseable {
             }
         }
         return errors;
+    }
+
+    /**
+     * Changes index to match the files actually stored in this archive.
+     * @return previous index
+     */
+    public Index reindex() throws IOException {
+        Index old;
+
+        old = new Index(index);
+
+        for (Node src : directory.find("**/*" + Utils.RAF)) {
+            String path = src.getRelative(directory);
+            if (!index.contains(path)) {
+                index.put(path, src.md5());
+            }
+        }
+
+        for (String path : index) {
+            FileNode src = directory.join(path);
+            if (!src.exists()) {
+                index.remove(path);
+            }
+        }
+        return old;
     }
 
     // TODO

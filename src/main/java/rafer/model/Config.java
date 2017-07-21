@@ -36,7 +36,7 @@ public class Config {
 
     public Config(World world) throws MkdirException {
         card = new Card(world.file("/Volumes/UNTITLED"));
-        rafs = new Volume("local", world.getHome().join("Pictures/Rafer"));
+        rafs = new Volume("local", world.getHome().join("Pictures/Rafer"), "170101", "171231");
         smugmug = world.getHome().join("Pictures/smugmug.idx");
         backups = new ArrayList<>();
         backups.add(new Volume("data", world.file("/Volumes/Data/Bilder")));

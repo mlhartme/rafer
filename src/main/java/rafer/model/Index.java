@@ -52,6 +52,10 @@ public class Index implements Iterable<String> {
         lines = new TreeMap<>();
     }
 
+    public Index(Index index) {
+        lines = new TreeMap<>(index.lines);
+    }
+
     public void put(String path, String hash) {
         lines.put(path, hash);
     }

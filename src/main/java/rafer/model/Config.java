@@ -25,8 +25,8 @@ import java.util.List;
 public class Config {
     public final Card card;
 
-    public final Archive rafs;
-    public final List<Archive> backups;
+    public final Volume rafs;
+    public final List<Volume> backups;
     public final FileNode gpxTracks;
 
     // smugmug index or null to disable smugmug sync
@@ -36,11 +36,11 @@ public class Config {
 
     public Config(World world) throws MkdirException {
         card = new Card(world.file("/Volumes/UNTITLED"));
-        rafs = new Archive("local", world.getHome().join("Pictures/Rafer"));
+        rafs = new Volume("local", world.getHome().join("Pictures/Rafer"));
         smugmug = world.getHome().join("Pictures/smugmug.idx");
         backups = new ArrayList<>();
-        backups.add(new Archive("data", world.file("/Volumes/Data/Bilder")));
-        backups.add(new Archive("neuerkeller", world.file("/Volumes/Neuerkeller/Bilder")));
+        backups.add(new Volume("data", world.file("/Volumes/Data/Bilder")));
+        backups.add(new Volume("neuerkeller", world.file("/Volumes/Neuerkeller/Bilder")));
         gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
         inboxTrash = world.getHome().join(".trash/rafer").mkdirOpt();
     }

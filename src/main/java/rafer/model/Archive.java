@@ -9,17 +9,13 @@ import java.io.IOException;
 import java.util.Date;
 
 /** Directory with an Index and Image files */
-public class Archive {
-    public final String name;
+public class Archive implements AutoCloseable {
+    public final Volume volume;
     private final FileNode directory;
 
-    public Archive(String name, FileNode directory) {
-        this.name = name;
+    public Archive(Volume volume, FileNode directory) {
+        this.volume = volume;
         this.directory = directory;
-    }
-
-    public boolean available() {
-        return directory.isDirectory();
     }
 
     public void verify(Console console, boolean md5) throws IOException {
@@ -119,5 +115,10 @@ public class Archive {
 
     public FileNode getFile(String basename, String ext) {
         return Sync.getFile(basename, directory, ext);
+    }
+
+    @Override
+    public void close() {
+        // TODO
     }
 }

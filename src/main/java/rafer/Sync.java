@@ -27,6 +27,7 @@ import net.oneandone.sushi.util.Strings;
 import rafer.model.Archive;
 import rafer.model.Pairs;
 import rafer.model.Utils;
+import rafer.model.Volume;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -58,7 +59,7 @@ public class Sync {
 
         cardCount = 0;
         backupCount = 0;
-        if (config.rafs.available()) {
+        if (!config.rafs.available()) {
             throw new IOException("local archive not available");
         }
         if (config.smugmug != null) {
@@ -70,7 +71,7 @@ public class Sync {
             smugmugRoot = null;
         }
         process = new ProcessBuilder("caffeinate").start();
-        try {
+        try (Archive local = config.rafs.open()) {
             if (config.card.available()) {
                 cardCount++;
                 tmp = world.getTemp().createTempDirectory();
@@ -84,7 +85,7 @@ public class Sync {
                     console.info.println("adding geotags ...");
                     pairs.geotags(console, config.gpxTracks);
                     console.info.println("saving rafs at " + config.rafs + " ...");
-                    pairs.moveRafs(config.rafs);
+                    pairs.moveRafs(local);
                     console.info.println("smugmug upload ...");
                     pairs.smugmugUpload(smugmugAccount, smugmugRoot);
                     tmp.deleteDirectory();
@@ -92,17 +93,19 @@ public class Sync {
             } else {
                 console.info.println("no card");
             }
-            smugmugSync(smugmugAccount, smugmugRoot);
-            for (Archive backup : config.backups) {
-                if (backup.available()) {
+            smugmugSync(smugmugAccount, smugmugRoot, local);
+            for (Volume volume : config.backups) {
+                if (volume.available()) {
                     backupCount++;
-                    console.info.println("backup sync with " + backup + " ...");
-                    errors = backup.add(console, config.rafs);
-                    if (errors > 0) {
-                        console.info.println("# errors: " + errors);
+                    try (Archive archive = volume.open()) {
+                        console.info.println("backup sync with " + volume + " ...");
+                        errors = archive.add(console, local);
+                        if (errors > 0) {
+                            console.info.println("# errors: " + errors);
+                        }
                     }
                 } else {
-                    console.info.println("backup not available: " + backup);
+                    console.info.println("backup not available: " + volume);
                 }
             }
             console.info.println();
@@ -116,9 +119,9 @@ public class Sync {
         }
     }
 
-    public void smugmugSync(Account account, FolderData root) throws IOException {
+    public void smugmugSync(Account account, FolderData root, Archive local) throws IOException {
         console.info.println("smugmug sync ...");
-        smugmugDeletes(account, root);
+        smugmugDeletes(account, root, local);
         console.info.println("done");
     }
 
@@ -132,7 +135,7 @@ public class Sync {
         }
     }
 
-    public void smugmugDeletes(Account account, FolderData root) throws IOException {
+    public void smugmugDeletes(Account account, FolderData root, Archive local) throws IOException {
         FileNode raf;
         Map<String, ImageData> remoteMap;
         String name;
@@ -146,7 +149,7 @@ public class Sync {
             if (getDate(name).before(START_DATE)) {
                 // skip
             } else {
-                raf = config.rafs.getFile(removeExtension(name), Utils.RAF);
+                raf = local.getFile(removeExtension(name), Utils.RAF);
                 if (!raf.exists()) {
                     console.info.println("D " + name);
                     account.albumImage(image.uri).delete();

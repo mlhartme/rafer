@@ -19,6 +19,7 @@ import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
 import rafer.model.Archive;
+import rafer.model.Volume;
 
 import java.io.IOException;
 
@@ -38,8 +39,17 @@ public class Status {
     }
 
     public void run() throws IOException {
-        for (Archive archive : config.backups) {
-            console.info.println(archive.name + ": " + (archive.available() ? "(not available)" : Integer.toString(archive.images())));
+        String status;
+
+        for (Volume volume : config.backups) {
+            if (volume.available()) {
+                try (Archive archive = volume.open()) {
+                    status = Integer.toString(archive.images());
+                }
+            } else {
+                status = "(not available)";
+            }
+            console.info.println(volume + ": " + status);
         }
     }
 }

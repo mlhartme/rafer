@@ -1,7 +1,5 @@
 package rafer.model;
 
-import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
 import rafer.Sync;
 
@@ -26,6 +24,9 @@ public class Archive implements AutoCloseable {
         this.end = end;
     }
 
+    public boolean contains(Date date) {
+        return start.before(date) && date.before(end);
+    }
 
     public void moveInto(FileNode src, long modified) throws IOException {
         FileNode dest;
@@ -38,98 +39,60 @@ public class Archive implements AutoCloseable {
         index.put(dest.getRelative(directory), dest.md5());
     }
 
-    public int add(Console console, Archive from) throws IOException {
-        FileNode dest;
+    /** @return update to bring this Archive in line with orig */
+    public Update diff(Archive orig) throws IOException {
         Date date;
-        int errors;
+        Update update;
 
-        errors = 0;
-        for (Node src : from.directory.find("**/*" + Utils.RAF)) {
-            String path = src.getRelative(from.directory);
-            if (!index.contains(path)) {
-                dest = directory.join(path);
-                dest.getParent().mkdirsOpt();
-                console.info.println("A " + directory.getName() + "/" + path);
-                try {
-                    src.copyFile(dest);
-                    dest.setLastModified(src.getLastModified());
-                    index.put(path, src.md5());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    errors++;
-                }
-            }
-        }
-
+        update = new Update();
         for (String path : index) {
-            FileNode src = from.directory.join(path);
-            if (!src.exists()) {
-                try {
-                    date = Sync.getDate(src.getName());
-                } catch (IllegalArgumentException e) {
-                    // console.info.println(src.getName());
-                    // e.printStackTrace();
-                    // errors++;
-                    continue;
-                }
-                if (date.before(Sync.START_DATE)) {
-                    // skip
-                } else {
-                    console.info.println("D " + directory.getName() + "/" + path);
-                    try {
-                        trash(directory, directory.join(path));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        errors++;
+            date = Sync.getPathDate(path);
+            if (!orig.contains(date)) {
+                continue;
+            }
+            final String md5 = orig.index.get(path);
+            if (md5 == null) {
+                update.add(new Action("D " + path) {
+                    @Override
+                    public void invoke() throws IOException {
+                        directory.join(path).deleteFile();
+                        index.remove(path);
                     }
-                    index.remove(path);
-                }
+                });
+            } else if (!md5.equals(index.get(path))) {
+                update.add(new Action("U " + path) {
+                    @Override
+                    public void invoke() throws IOException {
+                        orig.directory.join(path).copyFile(directory.join(path));
+                        index.put(path, md5);
+                    }
+                });
             }
         }
-        return errors;
+        for (String path : orig.index) {
+            date = Sync.getPathDate(path);
+            if (!contains(date)) {
+                continue;
+            }
+            final String md5 = index.get(path);
+            if (md5 == null) {
+                update.add(new Action("A " + path) {
+                    @Override
+                    public void invoke() throws IOException {
+                        orig.directory.join(path).copyFile(directory.join(path));
+                        index.put(path, orig.index.get(path));
+                    }
+                });
+            } else {
+                // existing files have already been handle in the first loop
+            }
+        }
+        return update;
     }
 
-    /**
-     * Changes index to match the files actually stored in this archive.
-     * @return previous index
-     */
-    public Index reindex() throws IOException {
-        Index old;
-
-        old = new Index(index);
-
-        for (Node src : directory.find("**/*" + Utils.RAF)) {
-            String path = src.getRelative(directory);
-            if (!index.contains(path)) {
-                index.put(path, src.md5());
-            }
-        }
-
-        for (String path : index) {
-            FileNode src = directory.join(path);
-            if (!src.exists()) {
-                index.remove(path);
-            }
-        }
-        return old;
-    }
-
-    // TODO
-    public void verify(Console console, boolean md5) throws IOException {
-        Index old;
-        Index current;
-
-        directory.checkDirectory();
-        old = Index.load(directory);
-        current = old.verify(directory, md5, console);
-        if (current.equals(old)) {
-            console.info.println("ok: " + directory);
-        } else {
-            console.readline("press return to update index, ctrl-c to abort");
-            current.save(directory);
-        }
-        console.info.println("files: " + current.size());
-        console.info.println("extensions: " + current.extensions());
+    /** @return update to adjust index; fill will not be changed */
+    public Update verify(boolean md5) throws IOException {
+        return index.verify(directory, md5);
     }
 
     private void trash(FileNode root, FileNode file) throws IOException {

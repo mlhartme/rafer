@@ -20,6 +20,7 @@ import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.file.FileNode;
 import rafer.model.Archive;
 import rafer.model.Index;
+import rafer.model.Update;
 import rafer.model.Volume;
 
 import java.io.IOException;
@@ -37,10 +38,18 @@ public class Verify {
 
     public void run() throws IOException {
         Volume v;
+        Update update;
 
         v = new Volume("tmp", dir);
         try (Archive archive = v.open()) {
-            archive.verify(console, md5);
+            update = archive.verify(md5);
+            if (update.isEmpty()) {
+                console.info.println("ok");
+                return;
+            }
+            console.info.println(update);
+            console.readline("Press return to fix, ctrl-c to abort: ");
+            update.invoke();
         }
     }
 }

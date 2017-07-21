@@ -26,6 +26,7 @@ import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.util.Strings;
 import rafer.model.Archive;
 import rafer.model.Pairs;
+import rafer.model.Update;
 import rafer.model.Utils;
 import rafer.model.Volume;
 
@@ -52,7 +53,6 @@ public class Sync {
         Process process;
         int cardCount;
         int backupCount;
-        int errors;
         Account smugmugAccount;
         FolderData smugmugRoot;
         FileNode tmp;
@@ -99,10 +99,10 @@ public class Sync {
                     backupCount++;
                     try (Archive archive = volume.open()) {
                         console.info.println("backup sync with " + volume + " ...");
-                        errors = archive.add(console, local);
-                        if (errors > 0) {
-                            console.info.println("# errors: " + errors);
-                        }
+
+                        Update update = archive.diff(local);
+                        console.info.println(update);
+                        update.invoke();;
                     }
                 } else {
                     console.info.println("backup not available: " + volume);
@@ -166,6 +166,10 @@ public class Sync {
     }
     public static FileNode getFile(String name, FileNode root, String ext) {
         return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
+    }
+
+    public static Date getPathDate(String path) {
+        return getDate(path.substring(path.lastIndexOf('/') + 1));
     }
 
     public static Date getDate(String name) {

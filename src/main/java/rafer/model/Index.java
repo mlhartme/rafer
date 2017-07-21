@@ -68,6 +68,10 @@ public class Index implements Iterable<String> {
         return lines.containsKey(path);
     }
 
+    public String get(String path) {
+        return lines.get(path);
+    }
+
     public int hashCode() {
         return lines.hashCode();
     }
@@ -116,14 +120,17 @@ public class Index implements Iterable<String> {
 
     //--
 
-    public Index verify(FileNode dir, boolean md5, Console console) throws IOException {
-        Index result;
-        String path;
+    public Update verify(FileNode dir, boolean md5) throws IOException {
+        Update result;
         String old;
         String checksum;
+        HashSet<String> existing;
 
-        result = new Index();
+        result = new Update();
+        existing = new HashSet<>();
         for (FileNode file : dir.find("**/*")) {
+            String path;
+
             if (file.isDirectory()) {
                 continue;
             }
@@ -133,23 +140,35 @@ public class Index implements Iterable<String> {
             }
             old =  lines.get(path);
             if (old == null) {
-                console.info.println("A " + path);
-                checksum = file.md5();
+                result.add(new Action("? " + path) {
+                    @Override
+                    public void invoke() throws IOException {
+                        Index.this.put(path, file.md5());
+                    }
+                });
             } else {
+                existing.add(path);
                 if (md5) {
                     checksum = file.md5();
                     if (!old.equals(checksum)) {
-                        console.info.println("M " + path);
+                        result.add(new Action("M " + path) {
+                            @Override
+                            public void invoke() throws IOException {
+                                Index.this.put(path, file.md5());
+                            }
+                        });
                     }
-                } else {
-                    checksum = old;
                 }
             }
-            result.put(path, checksum);
         }
-        for (String key : lines.keySet()) {
-            if (!result.contains(key)) {
-                console.info.println("D " + key);
+        for (String path : lines.keySet()) {
+            if (!existing.contains(path)) {
+                result.add(new Action("! " + path) {
+                    @Override
+                    public void invoke() throws IOException {
+                        Index.this.remove(path);
+                    }
+                });
             }
         }
         return result;

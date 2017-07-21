@@ -40,11 +40,11 @@ public class Archive implements AutoCloseable {
     }
 
     /** @return update to bring this Archive in line with orig */
-    public Update diff(Archive orig) throws IOException {
+    public Patch diff(Archive orig) throws IOException {
         Date date;
-        Update update;
+        Patch update;
 
-        update = new Update();
+        update = new Patch();
         for (String path : index) {
             date = Sync.getPathDate(path);
             if (!orig.contains(date)) {
@@ -91,7 +91,7 @@ public class Archive implements AutoCloseable {
     }
 
     /** @return update to adjust index; fill will not be changed */
-    public Update verify(boolean md5) throws IOException {
+    public Patch verify(boolean md5) throws IOException {
         return index.verify(directory, md5);
     }
 

@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Update {
+public class Patch {
     private final List<Action> actions;
 
-    public Update() {
+    public Patch() {
         this.actions = new ArrayList<>();
     }
 

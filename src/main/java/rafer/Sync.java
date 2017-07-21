@@ -26,7 +26,7 @@ import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.util.Strings;
 import rafer.model.Archive;
 import rafer.model.Pairs;
-import rafer.model.Update;
+import rafer.model.Patch;
 import rafer.model.Utils;
 import rafer.model.Volume;
 
@@ -100,7 +100,7 @@ public class Sync {
                     try (Archive archive = volume.open()) {
                         console.info.println("backup sync with " + volume + " ...");
 
-                        Update update = archive.diff(local);
+                        Patch update = archive.diff(local);
                         console.info.println(update);
                         update.invoke();;
                     }

@@ -15,7 +15,6 @@
  */
 package rafer.model;
 
-import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.file.FileNode;
 
 import java.io.IOException;
@@ -120,13 +119,13 @@ public class Index implements Iterable<String> {
 
     //--
 
-    public Update verify(FileNode dir, boolean md5) throws IOException {
-        Update result;
+    public Patch verify(FileNode dir, boolean md5) throws IOException {
+        Patch result;
         String old;
         String checksum;
         HashSet<String> existing;
 
-        result = new Update();
+        result = new Patch();
         existing = new HashSet<>();
         for (FileNode file : dir.find("**/*")) {
             String path;

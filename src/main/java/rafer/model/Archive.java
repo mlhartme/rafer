@@ -10,16 +10,14 @@ import java.util.Date;
 
 /** Directory with an Index and Image files */
 public class Archive implements AutoCloseable {
-    public static Archive open(Volume volume, FileNode directory) throws IOException {
-        return new Archive(volume, directory, Index.load(directory));
+    public static Archive open(FileNode directory) throws IOException {
+        return new Archive(directory, Index.load(directory));
     }
 
-    public final Volume volume;
     private final FileNode directory;
     private final Index index;
 
-    private Archive(Volume volume, FileNode directory, Index index) {
-        this.volume = volume;
+    private Archive(FileNode directory, Index index) {
         this.directory = directory;
         this.index = index;
     }

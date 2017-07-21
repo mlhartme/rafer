@@ -19,7 +19,7 @@ public class Volume {
     }
 
     public Archive open() throws IOException {
-        return Archive.open(this, directory);
+        return Archive.open(directory);
     }
 
     public String toString() {

@@ -37,18 +37,18 @@ public class Verify {
 
     public void run() throws IOException {
         Volume v;
-        Patch update;
+        Patch patch;
 
         v = new Volume("tmp", dir);
         try (Archive archive = v.open()) {
-            update = archive.verify(md5);
-            if (update.isEmpty()) {
+            patch = archive.verify(md5);
+            if (patch.isEmpty()) {
                 console.info.println("ok");
                 return;
             }
-            console.info.println(update);
+            console.info.println(patch);
             console.readline("Press return to fix, ctrl-c to abort: ");
-            update.invoke();
+            patch.invoke();
         }
     }
 }

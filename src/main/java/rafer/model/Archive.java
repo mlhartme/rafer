@@ -39,12 +39,12 @@ public class Archive implements AutoCloseable {
         index.put(dest.getRelative(directory), dest.md5());
     }
 
-    /** @return update to bring this Archive in line with orig */
+    /** @return patch to bring this Archive in line with orig */
     public Patch diff(Archive orig) throws IOException {
         Date date;
-        Patch update;
+        Patch patch;
 
-        update = new Patch();
+        patch = new Patch();
         for (String path : index) {
             date = Sync.getPathDate(path);
             if (!orig.contains(date)) {
@@ -52,7 +52,7 @@ public class Archive implements AutoCloseable {
             }
             final String md5 = orig.index.get(path);
             if (md5 == null) {
-                update.add(new Action("D " + path) {
+                patch.add(new Action("D " + path) {
                     @Override
                     public void invoke() throws IOException {
                         directory.join(path).deleteFile();
@@ -60,7 +60,7 @@ public class Archive implements AutoCloseable {
                     }
                 });
             } else if (!md5.equals(index.get(path))) {
-                update.add(new Action("U " + path) {
+                patch.add(new Action("U " + path) {
                     @Override
                     public void invoke() throws IOException {
                         orig.directory.join(path).copyFile(directory.join(path));
@@ -76,7 +76,7 @@ public class Archive implements AutoCloseable {
             }
             final String md5 = index.get(path);
             if (md5 == null) {
-                update.add(new Action("A " + path) {
+                patch.add(new Action("A " + path) {
                     @Override
                     public void invoke() throws IOException {
                         orig.directory.join(path).copyFile(directory.join(path));
@@ -87,10 +87,10 @@ public class Archive implements AutoCloseable {
                 // existing files have already been handle in the first loop
             }
         }
-        return update;
+        return patch;
     }
 
-    /** @return update to adjust index; fill will not be changed */
+    /** @return patch to adjust index; fill will not be changed */
     public Patch verify(boolean md5) throws IOException {
         return index.verify(directory, md5);
     }

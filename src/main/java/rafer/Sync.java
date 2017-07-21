@@ -100,9 +100,9 @@ public class Sync {
                     try (Archive archive = volume.open()) {
                         console.info.println("backup sync with " + volume + " ...");
 
-                        Patch update = archive.diff(local);
-                        console.info.println(update);
-                        update.invoke();;
+                        Patch patch = archive.diff(local);
+                        console.info.println(patch);
+                        patch.invoke();;
                     }
                 } else {
                     console.info.println("backup not available: " + volume);

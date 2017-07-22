@@ -8,6 +8,7 @@ import java.io.IOException;
 
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class IndexTest {
@@ -57,8 +58,5 @@ public class IndexTest {
         assertEquals("D " + name + "\n", patch.toString());
         patch.apply();
         assertEquals(0, index.size());
-    }
-
-    private void assertNotEquals(String md5, String s) {
     }
 }

@@ -168,15 +168,11 @@ public class Sync {
         return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
     }
 
-    public static Date getPathDate(String path) {
-        return getDate(path.substring(path.lastIndexOf('/') + 1));
-    }
-
     public static Date getDate(String name) {
         Date date;
 
         if (!name.startsWith("r") || name.indexOf('x') != 7) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("not a lined name: " + name);
         }
         try {
             date = Utils.LINKED_FMT.parse(name.substring(1, 7));

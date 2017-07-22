@@ -4,9 +4,13 @@ import net.oneandone.sushi.fs.file.FileNode;
 import rafer.Sync;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Date;
 
-/** Index and directory containing image files */
+/**
+ * Index and directory containing image files. Adjusts the directory structure when moving files inside;
+ * used this structure to determine the file modified date
+ */
 public class Archive implements AutoCloseable {
     public static Archive open(FileNode directory, Date start, Date end) throws IOException {
         return new Archive(directory, Index.load(directory), start, end);
@@ -28,15 +32,22 @@ public class Archive implements AutoCloseable {
         return start.before(date) && date.before(end);
     }
 
-    public void moveInto(FileNode src, long modified) throws IOException {
+    public void moveInto(FileNode src) throws IOException {
+        Date modified;
         FileNode dest;
+        String path;
 
+        modified = Sync.getDate(src.getName());
         dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
         dest.getParent().mkdirsOpt();
         dest.checkNotExists();
         src.move(dest); // dont copy - disk might be full
-        dest.setLastModified(modified);
-        index.put(dest.getRelative(directory), dest.md5());
+        dest.setLastModified(modified.getTime());
+        path = dest.getRelative(directory);
+        // TODO: make sure the date can be parsed;
+        // date in name and date in argument is redundant
+        getDate(path);
+        index.put(path, dest.md5());
     }
 
     /** @return patch to bring this Archive in line with orig */
@@ -46,7 +57,7 @@ public class Archive implements AutoCloseable {
 
         patch = new Patch();
         for (String path : index) {
-            date = Sync.getPathDate(path);
+            date = getDate(path);
             if (!master.contains(date)) {
                 continue;
             }
@@ -70,7 +81,7 @@ public class Archive implements AutoCloseable {
             }
         }
         for (String path : master.index) {
-            date = Sync.getPathDate(path);
+            date = getDate(path);
             if (!contains(date)) {
                 continue;
             }
@@ -79,7 +90,11 @@ public class Archive implements AutoCloseable {
                 patch.add(new Action("A " + path) {
                     @Override
                     public void invoke() throws IOException {
-                        master.directory.join(path).copyFile(directory.join(path));
+                        FileNode dest;
+
+                        dest = directory.join(path);
+                        dest.getParent().mkdirsOpt();
+                        master.directory.join(path).copyFile(dest);
                         index.put(path, master.index.get(path));
                     }
                 });
@@ -88,6 +103,10 @@ public class Archive implements AutoCloseable {
             }
         }
         return patch;
+    }
+
+    public static Date getDate(String path) {
+        return Sync.getDate(path.substring(path.lastIndexOf('/') + 1));
     }
 
     /** @return patch to adjust index; fill will not be changed */
@@ -99,12 +118,25 @@ public class Archive implements AutoCloseable {
         return Index.load(directory).size();
     }
 
+    public FileNode getFile(String name) {
+        return directory.join(Utils.MONTH_FMT.format(Sync.getDate(name)), name);
+    }
+
     public FileNode getFile(String basename, String ext) {
         return Sync.getFile(basename, directory, ext);
+    }
+
+    // does not compare then name
+    public boolean same(Archive other) {
+        return index.equals(other.index) && start == other.start && end == other.end;
     }
 
     @Override
     public void close() throws IOException {
         index.save(directory);
+    }
+
+    public int size() {
+        return index.size();
     }
 }

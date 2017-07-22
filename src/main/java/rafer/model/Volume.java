@@ -15,7 +15,7 @@ public class Volume {
 
     // dates as YYmmDD
     public Volume(String name, FileNode directory) {
-        this(name, directory, "010101", "991231");
+        this(name, directory, "010101", "191231");
     }
 
     public Volume(String name, FileNode directory, String start, String end) {

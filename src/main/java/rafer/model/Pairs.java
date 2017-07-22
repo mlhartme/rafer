@@ -117,7 +117,7 @@ public class Pairs {
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = directory.join(entry.getKey() + Utils.RAF);
-            dest.moveInto(src, entry.getValue());
+            dest.moveInto(src);
         }
     }
 

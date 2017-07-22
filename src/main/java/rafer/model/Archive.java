@@ -6,7 +6,7 @@ import rafer.Sync;
 import java.io.IOException;
 import java.util.Date;
 
-/** Directory with an Index and Image files */
+/** Index and directory containing image files */
 public class Archive implements AutoCloseable {
     public static Archive open(FileNode directory, Date start, Date end) throws IOException {
         return new Archive(directory, Index.load(directory), start, end);
@@ -14,8 +14,8 @@ public class Archive implements AutoCloseable {
 
     private final FileNode directory;
     private final Index index;
-    private final Date start;
-    private final Date end;
+    private final Date start; // inclusive [
+    private final Date end; // [ exclusive
 
     private Archive(FileNode directory, Index index, Date start, Date end) {
         this.directory = directory;
@@ -40,17 +40,17 @@ public class Archive implements AutoCloseable {
     }
 
     /** @return patch to bring this Archive in line with orig */
-    public Patch diff(Archive orig) throws IOException {
+    public Patch diff(Archive master) throws IOException {
         Date date;
         Patch patch;
 
         patch = new Patch();
         for (String path : index) {
             date = Sync.getPathDate(path);
-            if (!orig.contains(date)) {
+            if (!master.contains(date)) {
                 continue;
             }
-            final String md5 = orig.index.get(path);
+            final String md5 = master.index.get(path);
             if (md5 == null) {
                 patch.add(new Action("D " + path) {
                     @Override
@@ -63,13 +63,13 @@ public class Archive implements AutoCloseable {
                 patch.add(new Action("U " + path) {
                     @Override
                     public void invoke() throws IOException {
-                        orig.directory.join(path).copyFile(directory.join(path));
+                        master.directory.join(path).copyFile(directory.join(path));
                         index.put(path, md5);
                     }
                 });
             }
         }
-        for (String path : orig.index) {
+        for (String path : master.index) {
             date = Sync.getPathDate(path);
             if (!contains(date)) {
                 continue;
@@ -79,12 +79,12 @@ public class Archive implements AutoCloseable {
                 patch.add(new Action("A " + path) {
                     @Override
                     public void invoke() throws IOException {
-                        orig.directory.join(path).copyFile(directory.join(path));
-                        index.put(path, orig.index.get(path));
+                        master.directory.join(path).copyFile(directory.join(path));
+                        index.put(path, master.index.get(path));
                     }
                 });
             } else {
-                // existing files have already been handle in the first loop
+                // existing files have already been handle in the first loop above
             }
         }
         return patch;
@@ -93,16 +93,6 @@ public class Archive implements AutoCloseable {
     /** @return patch to adjust index; fill will not be changed */
     public Patch verify(boolean md5) throws IOException {
         return index.verify(directory, md5);
-    }
-
-    private void trash(FileNode root, FileNode file) throws IOException {
-        FileNode dir;
-
-        dir = root.getParent().join(".trash." + root.getName());
-        dir.mkdirOpt();
-        dir = dir.join(Utils.STARTED);
-        dir.mkdirOpt();
-        file.move(dir.join(file.getName()));
     }
 
     public int images() throws IOException {

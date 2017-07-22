@@ -122,7 +122,6 @@ public class Index implements Iterable<String> {
     public Patch verify(FileNode dir, boolean md5) throws IOException {
         Patch result;
         String old;
-        String checksum;
         HashSet<String> existing;
 
         result = new Patch();
@@ -139,7 +138,7 @@ public class Index implements Iterable<String> {
             }
             old =  lines.get(path);
             if (old == null) {
-                result.add(new Action("? " + path) {
+                result.add(new Action("A " + path) {
                     @Override
                     public void invoke() throws IOException {
                         Index.this.put(path, file.md5());
@@ -148,12 +147,12 @@ public class Index implements Iterable<String> {
             } else {
                 existing.add(path);
                 if (md5) {
-                    checksum = file.md5();
+                    final String checksum = file.md5();
                     if (!old.equals(checksum)) {
-                        result.add(new Action("M " + path) {
+                        result.add(new Action("U " + path) {
                             @Override
                             public void invoke() throws IOException {
-                                Index.this.put(path, file.md5());
+                                Index.this.put(path, checksum);
                             }
                         });
                     }
@@ -162,7 +161,7 @@ public class Index implements Iterable<String> {
         }
         for (String path : lines.keySet()) {
             if (!existing.contains(path)) {
-                result.add(new Action("! " + path) {
+                result.add(new Action("D " + path) {
                     @Override
                     public void invoke() throws IOException {
                         Index.this.remove(path);

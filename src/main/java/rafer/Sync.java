@@ -102,7 +102,7 @@ public class Sync {
 
                         Patch patch = archive.diff(local);
                         console.info.println(patch);
-                        patch.invoke();;
+                        patch.apply();;
                     }
                 } else {
                     console.info.println("backup not available: " + volume);

@@ -48,7 +48,7 @@ public class Verify {
             }
             console.info.println(patch);
             console.readline("Press return to fix, ctrl-c to abort: ");
-            patch.invoke();
+            patch.apply();
         }
     }
 }

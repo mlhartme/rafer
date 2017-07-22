@@ -15,7 +15,7 @@ public class Patch {
         actions.add(action);
     }
 
-    public void invoke() throws IOException {
+    public void apply() throws IOException {
         for (Action action : actions) {
             action.invoke();
         }

@@ -59,7 +59,7 @@ public class Sync {
 
         cardCount = 0;
         backupCount = 0;
-        if (!config.rafs.available()) {
+        if (!config.local.available()) {
             throw new IOException("local archive not available");
         }
         if (config.smugmug != null) {
@@ -71,7 +71,7 @@ public class Sync {
             smugmugRoot = null;
         }
         process = new ProcessBuilder("caffeinate").start();
-        try (Archive local = config.rafs.open()) {
+        try (Archive local = config.local.open()) {
             if (config.card.available()) {
                 cardCount++;
                 tmp = world.getTemp().createTempDirectory();
@@ -84,7 +84,7 @@ public class Sync {
                     pairs = Pairs.normalize(console, tmp);
                     console.info.println("adding geotags ...");
                     pairs.geotags(console, config.gpxTracks);
-                    console.info.println("saving rafs at " + config.rafs + " ...");
+                    console.info.println("saving rafs at " + config.local + " ...");
                     pairs.moveRafs(local);
                     console.info.println("smugmug upload ...");
                     pairs.smugmugUpload(smugmugAccount, smugmugRoot);

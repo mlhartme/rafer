@@ -4,12 +4,10 @@ import net.oneandone.sushi.fs.file.FileNode;
 import rafer.Sync;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Date;
 
 /**
- * Index and directory containing image files. Adjusts the directory structure when moving files inside;
- * used this structure to determine the file modified date
+ * Index and directory containing image files. Uses the file get the modified date, adjusts the directory structure accordingly.
  */
 public class Archive implements AutoCloseable {
     public static Archive open(FileNode directory, Date start, Date end) throws IOException {
@@ -32,6 +30,7 @@ public class Archive implements AutoCloseable {
         return start.before(date) && date.before(end);
     }
 
+    // TODO: dont adjust file name with date before calling this method; moveInfo should change the name itself
     public void moveInto(FileNode src) throws IOException {
         Date modified;
         FileNode dest;
@@ -44,9 +43,6 @@ public class Archive implements AutoCloseable {
         src.move(dest); // dont copy - disk might be full
         dest.setLastModified(modified.getTime());
         path = dest.getRelative(directory);
-        // TODO: make sure the date can be parsed;
-        // date in name and date in argument is redundant
-        getDate(path);
         index.put(path, dest.md5());
     }
 

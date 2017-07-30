@@ -63,8 +63,9 @@ public final class Main {
                 + "   fuji raf file maintenance\n"
                 + "\n"
                 + "commands\n"
+                + "  'status'\n"
                 + "  'sync'\n"
-                + "  'verify' dir\n"
+                + "  'verify' volume\n"
         );
         return builder.toString();
     }

@@ -15,10 +15,13 @@
  */
 package rafer;
 
+import net.oneandone.inline.ArgumentException;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.MkdirException;
+import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import rafer.model.Archive;
+import rafer.model.Config;
 import rafer.model.Patch;
 import rafer.model.Volume;
 
@@ -27,20 +30,21 @@ import java.io.IOException;
 public class Verify {
     private final Console console;
     private final boolean md5;
-    private final FileNode dir;
+    private final Volume volume;
 
-    public Verify(Console console, boolean md5, FileNode dir) throws MkdirException {
+    public Verify(World world, Console console, boolean md5, String name) throws IOException {
         this.console = console;
         this.md5 = md5;
-        this.dir = dir;
+        this.volume = Config.load(world).lookup(name);
+        if (volume == null) {
+            throw new ArgumentException("no such volume: " + name);
+        }
     }
 
     public void run() throws IOException {
-        Volume v;
         Patch patch;
 
-        v = new Volume("tmp", dir);
-        try (Archive archive = v.open()) {
+        try (Archive archive = volume.open()) {
             patch = archive.verify(md5);
             if (patch.isEmpty()) {
                 console.info.println("ok");

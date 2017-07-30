@@ -29,7 +29,7 @@ import java.util.List;
 
 public class Config {
     public static Config load(World world) throws IOException {
-        return load(world.getHome().join("config.json"));
+        return load(world.getHome().join(".rafer.json"));
     }
 
     public static Config load(FileNode file) throws IOException {
@@ -131,5 +131,14 @@ public class Config {
         this.gpxTracks = gpxTracks;
         this.smugmug = smugmug;
         this.inboxTrash = inboxTrash;
+    }
+
+    public Volume lookup(String name) {
+        for (Volume volume: volumes) {
+            if (volume.name.equals(name)) {
+                return volume;
+            }
+        }
+        return null;
     }
 }

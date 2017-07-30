@@ -15,18 +15,109 @@
  */
 package rafer.model;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import jdk.nashorn.internal.parser.JSONParser;
 import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Config {
-    public final Card card;
+    public static Config load(World world) throws IOException {
+        return load(world.getHome().join("config.json"));
+    }
 
-    public final Volume local;
-    public final List<Volume> backups;
+    public static Config load(FileNode file) throws IOException {
+        World world;
+        JsonObject root;
+        FileNode old;
+        Card card;
+        List<Volume> volumes;
+        FileNode gpxTracks;
+        FileNode smugmug;
+        FileNode inboxTrash;
+
+        world = file.getWorld();
+        old = world.getWorking();
+        world.setWorking(world.getHome());
+        try {
+            root = new JsonParser().parse(file.readString()).getAsJsonObject();
+            card = new Card(dir(world, root, "card"));
+            volumes = volumes(world, root, "volumes");
+            gpxTracks = dir(world, root, "gpxTracks");
+            smugmug = dir(world, root, "smugmug");
+            inboxTrash = dir(world, root, "inboxTrash");
+            return new Config(card, volumes, gpxTracks, smugmug, inboxTrash);
+        } finally {
+            world.setWorking(old);
+        }
+    }
+
+
+    //--
+
+    private static List<Volume> volumes(World world, JsonObject root, String name) throws IOException {
+        List<Volume> result;
+        JsonObject v;
+
+        result = new ArrayList<>();
+        for (JsonElement element : field(root, name).getAsJsonArray()) {
+            v = element.getAsJsonObject();
+            result.add(volume(world, v));
+        }
+        return result;
+    }
+
+    private static Volume volume(World world, JsonObject volume) throws IOException {
+        String name;
+        FileNode directory;
+        String start;
+        String end;
+
+        name = string(volume, "name");
+        directory = dir(world, volume, "directory");
+        start = string(volume, "start", "010101");
+        end = string(volume, "start", "191231");
+        return new Volume(name, directory, start, end);
+    }
+
+    private static FileNode dir(World world, JsonObject root, String name) throws IOException {
+        return world.file(string(root, name));
+    }
+
+    private static String string(JsonObject root, String name) throws IOException {
+        return field(root, name).getAsString();
+    }
+
+    private static String string(JsonObject root, String name, String dflt) throws IOException {
+        JsonElement result;
+
+        result = root.get(name);
+        if (result == null) {
+            return dflt;
+        }
+        return result.getAsString();
+    }
+
+    private static JsonElement field(JsonObject root, String name) throws IOException {
+        JsonElement result;
+
+        result = root.get(name);
+        if (result == null) {
+            throw new IOException("missing field: " + name);
+        }
+        return result;
+    }
+
+    //--
+
+    public final Card card;
+    public final List<Volume> volumes;
     public final FileNode gpxTracks;
 
     // smugmug index or null to disable smugmug sync
@@ -34,14 +125,11 @@ public class Config {
     public final FileNode inboxTrash;
 
 
-    public Config(World world) throws MkdirException {
-        card = new Card(world.file("/Volumes/UNTITLED"));
-        local = new Volume("local", world.getHome().join("Pictures/Rafer"), "170101", "180101");
-        smugmug = world.getHome().join("Pictures/smugmug.idx");
-        backups = new ArrayList<>();
-        backups.add(new Volume("data", world.file("/Volumes/Data/Bilder")));
-        backups.add(new Volume("neuerkeller", world.file("/Volumes/Neuerkeller/Bilder")));
-        gpxTracks = world.getHome().join("Dropbox/Apps/Geotag Photos Pro (iOS)");
-        inboxTrash = world.getHome().join(".trash/rafer").mkdirOpt();
+    public Config(Card card, List<Volume> volumes, FileNode gpxTracks, FileNode smugmug, FileNode inboxTrash) {
+        this.card = card;
+        this.volumes = volumes;
+        this.gpxTracks = gpxTracks;
+        this.smugmug = smugmug;
+        this.inboxTrash = inboxTrash;
     }
 }

@@ -28,8 +28,8 @@ public class Status {
     private final Console console;
     private final rafer.model.Config config;
 
-    public Status(World world, Console console) throws MkdirException {
-        this(world, console, new rafer.model.Config(world));
+    public Status(World world, Console console) throws IOException {
+        this(world, console, rafer.model.Config.load(world));
     }
 
     public Status(World world, Console console, rafer.model.Config config) {
@@ -41,7 +41,7 @@ public class Status {
     public void run() throws IOException {
         String status;
 
-        for (Volume volume : config.backups) {
+        for (Volume volume : config.volumes) {
             if (volume.available()) {
                 try (Archive archive = volume.open()) {
                     status = Integer.toString(archive.images());

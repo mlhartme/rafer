@@ -39,8 +39,8 @@ public class Sync {
     private final Console console;
     private final rafer.model.Config config;
 
-    public Sync(World world, Console console) throws MkdirException {
-        this(world, console, new rafer.model.Config(world));
+    public Sync(World world, Console console) throws IOException {
+        this(world, console, rafer.model.Config.load(world));
     }
 
     public Sync(World world, Console console, rafer.model.Config config) {
@@ -56,10 +56,14 @@ public class Sync {
         Account smugmugAccount;
         FolderData smugmugRoot;
         FileNode tmp;
+        Volume localVolume;
+        List<Volume> backups;
 
         cardCount = 0;
         backupCount = 0;
-        if (!config.local.available()) {
+        backups = new ArrayList<>(config.volumes);
+        localVolume = backups.remove(0);
+        if (!localVolume.available()) {
             throw new IOException("local archive not available");
         }
         if (config.smugmug != null) {
@@ -71,12 +75,11 @@ public class Sync {
             smugmugRoot = null;
         }
         process = new ProcessBuilder("caffeinate").start();
-        try (Archive local = config.local.open()) {
+        try (Archive local = localVolume.open()) {
             if (config.card.available()) {
                 cardCount++;
                 tmp = world.getTemp().createTempDirectory();
-                List<FileNode> downloaded = config.card.download(console, tmp);
-                if (downloaded.isEmpty()) {
+                if (!config.card.download(console, tmp)) {
                     console.info.println("no images");
                 } else {
                     Pairs pairs;
@@ -84,7 +87,7 @@ public class Sync {
                     pairs = Pairs.normalize(console, tmp);
                     console.info.println("adding geotags ...");
                     pairs.geotags(console, config.gpxTracks);
-                    console.info.println("saving rafs at " + config.local + " ...");
+                    console.info.println("saving rafs at " + localVolume + " ...");
                     pairs.moveRafs(local);
                     console.info.println("smugmug upload ...");
                     pairs.smugmugUpload(smugmugAccount, smugmugRoot);
@@ -94,7 +97,7 @@ public class Sync {
                 console.info.println("no card");
             }
             smugmugSync(smugmugAccount, smugmugRoot, local);
-            for (Volume volume : config.backups) {
+            for (Volume volume : backups) {
                 if (volume.available()) {
                     backupCount++;
                     try (Archive archive = volume.open()) {

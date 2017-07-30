@@ -1,0 +1,27 @@
+{
+  "card" : "/Volumes/UNTITLED",
+  "volumes" : [
+    { 
+      "name" : "local",
+      "directory" : "Pictures/Rafer",
+      "start" : "170101",
+      "end" : "180101"
+    },
+    {
+      "name" : "data",
+      "directory" : "/Volumes/Data/Bilder"
+    },
+    {
+      "name" : "keller",
+      "directory" : "/Volumes/Keller/Bilder"
+    },
+    {
+      "name" : "neuerkeller",
+      "directory" : "/Volumes/Neuerkeller/Bilder"
+    }
+  ],
+  "smugmug" : "Pictures/smugmug.idx",
+  "gpxTracks" : "Dropbox/Apps/Geotag Photos Pro (iOS)",
+  "inboxTrash" : ".trash/rafer"
+}
+

@@ -25,9 +25,9 @@ public class Card {
     }
 
     /** Throws an error for non-pairs
-     * @return list of raf files in dest
+     * @return true if files have been downloaded to dest
      */
-    public List<FileNode> download(Console console, FileNode dest) throws IOException {
+    public boolean download(Console console, FileNode dest) throws IOException {
         List<FileNode> cardRafs;
         List<FileNode> downloaded;
         FileNode dcim;
@@ -39,7 +39,7 @@ public class Card {
         downloaded = download(console, cardRafs, dest);
         onCardBackup(console, dcim, downloaded);
         ejectOpt(console);
-        return downloaded;
+        return !downloaded.isEmpty();
     }
 
     /** @return srcRafs actually downloaded */

@@ -65,7 +65,7 @@ public final class Main {
                 + "\n"
                 + "commands\n"
                 + "  'status'               print status of all volumes\n"
-                + "  'index' volume         create or update volume index\n"
+                + "  'index' volume         create or update volume index; this is kind of a commit command\n"
                 + "  'copy' master slave    sync changes from master to slave\n"
                 + "  'sync'                 synchronize all\n"
         );

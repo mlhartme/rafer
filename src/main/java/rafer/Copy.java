@@ -17,9 +17,7 @@ package rafer;
 
 import net.oneandone.inline.ArgumentException;
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
-import net.oneandone.sushi.fs.file.FileNode;
 import rafer.model.Archive;
 import rafer.model.Config;
 import rafer.model.Patch;
@@ -27,27 +25,36 @@ import rafer.model.Volume;
 
 import java.io.IOException;
 
-public class Index {
+public class Copy {
     private final Console console;
-    private final boolean md5;
-    private final Volume volume;
+    private final Volume master;
+    private final Volume slave;
 
-    public Index(World world, Console console, boolean md5, String name) throws IOException {
+    public Copy(World world, Console console, String master, String slave) throws IOException {
+        Config config;
+
+        config = Config.load(world);
         this.console = console;
-        this.md5 = md5;
-        this.volume = Config.load(world).lookup(name);
-        if (this.volume == null) {
-            throw new ArgumentException("no such volume: " + name);
+        this.master = config.lookup(master);
+        if (this.master == null) {
+            throw new ArgumentException("no such volume: " + master);
+        }
+        this.slave = config.lookup(slave);
+        if (this.slave == null) {
+            throw new ArgumentException("no such volume: " + slave);
+        }
+        if (this.master == this.slave) {
+            throw new ArgumentException("cannot copy to itself");
         }
     }
 
     public void run() throws IOException {
         Patch patch;
 
-        try (Archive archive = volume.open()) {
-            patch = archive.verify(md5);
+        try (Archive from = master.open(); Archive to = slave.open()) {
+            patch = to.diff(from);
             if (patch.isEmpty()) {
-                console.info.println("ok");
+                console.info.println("nothing to do");
                 return;
             }
             console.info.println(patch);

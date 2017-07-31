@@ -27,12 +27,12 @@ import rafer.model.Volume;
 
 import java.io.IOException;
 
-public class Verify {
+public class Index {
     private final Console console;
     private final boolean md5;
     private final Volume volume;
 
-    public Verify(World world, Console console, boolean md5, String name) throws IOException {
+    public Index(World world, Console console, boolean md5, String name) throws IOException {
         this.console = console;
         this.md5 = md5;
         this.volume = Config.load(world).lookup(name);

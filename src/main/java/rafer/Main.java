@@ -45,7 +45,7 @@ public final class Main {
                         .add(PackageVersion.class, "version")
                         .add(Sync.class, "sync")
                         .add(Status.class, "status")
-                        .add(Verify.class, "verify -md5 dir");
+                        .add(Index.class, "index -md5 dir");
             try {
                 result = cli.run(args);
                 return result;
@@ -63,9 +63,9 @@ public final class Main {
                 + "   fuji raf file maintenance\n"
                 + "\n"
                 + "commands\n"
-                + "  'status'\n"
-                + "  'sync'\n"
-                + "  'verify' volume\n"
+                + "  'status'         print status of all volumes\n"
+                + "  'sync'           synchronize all\n"
+                + "  'index' volume   create or update volume index\n"
         );
         return builder.toString();
     }

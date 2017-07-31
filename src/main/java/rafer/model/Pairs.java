@@ -1,7 +1,5 @@
 package rafer.model;
 
-import net.mlhartme.smuggler.cache.FolderData;
-import net.mlhartme.smuggler.smugmug.Account;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
@@ -121,13 +119,15 @@ public class Pairs {
         }
     }
 
-    public void smugmugUpload(Account account, FolderData root) throws IOException {
+    public void smugmugInbox(FileNode smugmugInbox) throws IOException {
         FileNode src;
+        FileNode dest;
 
         for (String name : pairs.keySet()) {
             src = Sync.getJpgFile(name, directory);
-            root.getOrCreateAlbum(account, src.getRelative(directory)).upload(account, directory.join(name));
-            src.deleteFile();
+            dest = smugmugInbox.join(src.getName());
+            dest.checkNotExists();
+            src.move(dest);
         }
     }
 

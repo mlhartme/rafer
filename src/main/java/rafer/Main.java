@@ -43,6 +43,8 @@ public final class Main {
                .begin(console, "-v -e  { setVerbose(v) setStacktraces(e) }")
                         .addDefault(new Help(console, help()), "help")
                         .add(PackageVersion.class, "version")
+                        .add(Import.class, "import")
+                        .add(Smugmug.class, "smugmug")
                         .add(Sync.class, "sync")
                         .add(Status.class, "status")
                         .add(Copy.class, "copy master slave")
@@ -67,7 +69,9 @@ public final class Main {
                 + "  'status'               print status of all volumes\n"
                 + "  'index' volume         create or update volume index; this is kind of a commit command\n"
                 + "  'copy' master slave    sync changes from master to slave\n"
-                + "  'sync'                 synchronize all\n"
+                + "  'import'               import card into local and smugmug inbox\n"
+                + "  'smugmug'              smugmug upload\n"
+                + "  'sync'                 synchronize volumes and smugmug inbox\n"
         );
         return builder.toString();
     }

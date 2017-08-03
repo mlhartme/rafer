@@ -39,8 +39,17 @@ public class Archive implements AutoCloseable {
         modified = Sync.getDate(src.getName());
         dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
         dest.getParent().mkdirsOpt();
-        dest.checkNotExists();
-        src.move(dest); // dont copy - disk might be full
+        if (dest.exists()) {
+            // TODO
+            if (src.md5().equals(dest.md5())) {
+                System.out.println("overwriting same file: " + dest);
+                dest.deleteFile();
+            } else {
+                dest = dest.getParent().join(dest.getName() + ".2");
+                System.out.println(dest + " exists");
+            }
+        }
+        src.move(dest); // don't copy - disk might be full
         dest.setLastModified(modified.getTime());
         path = dest.getRelative(directory);
         index.put(path, dest.md5());

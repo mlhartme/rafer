@@ -56,6 +56,8 @@ public class Pairs {
     //--
 
     private final FileNode directory;
+
+    /** maps file name (without extension to modified date */
     private final Map<String, Long> pairs;
 
     private Pairs(FileNode directory, Map<String, Long> pairs) {
@@ -124,7 +126,7 @@ public class Pairs {
         FileNode dest;
 
         for (String name : pairs.keySet()) {
-            src = Sync.getJpgFile(name, directory);
+            src = directory.join(name + Utils.RAF);
             dest = smugmugInbox.join(src.getName());
             dest.checkNotExists();
             src.move(dest);

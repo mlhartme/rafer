@@ -44,32 +44,30 @@ public class Import {
         Process process;
         FileNode tmp;
         Volume localVolume;
+        Pairs pairs;
 
         localVolume = config.volumes.get(0);
         if (!localVolume.available()) {
             throw new IOException("local archive not available");
         }
+        if (!config.card.available()) {
+            throw new IOException("no card");
+        }
         process = new ProcessBuilder("caffeinate").start();
         try (Archive local = localVolume.open()) {
-            if (config.card.available()) {
-                tmp = world.getTemp().createTempDirectory();
-                if (!config.card.download(console, tmp)) {
-                    console.info.println("no images");
-                } else {
-                    Pairs pairs;
-
-                    pairs = Pairs.normalize(console, tmp);
-                    console.info.println("adding geotags ...");
-                    pairs.geotags(console, config.gpxTracks);
-                    console.info.println("saving rafs at " + localVolume + " ...");
-                    pairs.moveRafs(local);
-                    console.info.println("smugmug upload ...");
-                    pairs.smugmugInbox(config.smugmugInbox);
-                    tmp.deleteDirectory();
-                }
-            } else {
-                console.info.println("no card");
+            tmp = world.getTemp().createTempDirectory();
+            if (!config.card.download(console, tmp)) {
+                console.info.println("no images");
+                return;
             }
+            pairs = Pairs.normalize(console, tmp);
+            console.info.println("adding geotags ...");
+            pairs.geotags(console, config.gpxTracks);
+            console.info.println("saving rafs at " + localVolume + " ...");
+            pairs.moveRafs(local);
+            console.info.println("moving jpgs to smugmug inbox ...");
+            pairs.smugmugInbox(config.smugmugInbox);
+            tmp.deleteDirectory();
         } finally {
             process.destroy();
         }

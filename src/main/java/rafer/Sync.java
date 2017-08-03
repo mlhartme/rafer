@@ -82,9 +82,6 @@ public class Sync {
         }
     }
 
-    public static FileNode getJpgFile(String name, FileNode root) {
-        return getFile(name, root, Utils.JPG);
-    }
     public static FileNode getFile(String name, FileNode root, String ext) {
         return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
     }

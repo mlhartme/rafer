@@ -76,10 +76,10 @@ public class Card {
 
     public void eject(Console console) {
         try {
-            console.info.println(directory.exec("diskutil", "eject", directory.getName()));
+            console.info.println(directory.getParent().exec("diskutil", "eject", directory.getName()));
         } catch (IOException e) {
             e.printStackTrace(console.verbose);
-            console.info.println("WARNING: eject failed");
+            console.info.println("WARNING: eject failed: " + e.getMessage());
         }
     }
 

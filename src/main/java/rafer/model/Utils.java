@@ -15,6 +15,8 @@
  */
 package rafer.model;
 
+import rafer.Sync;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -23,9 +25,10 @@ public class Utils {
     public static final SimpleDateFormat DAY_FMT = new SimpleDateFormat("yyyy/MM/dd");
     public static final SimpleDateFormat MONTH_FMT = new SimpleDateFormat("yyyy/MM");
 
-    public static final String STARTED = new SimpleDateFormat("yyMMdd-hhmmss").format(new Date());
-
-
     public static final String RAF = ".RAF";
     public static final String JPG = ".JPG";
+
+    public static String getPath(String name) {
+        return Utils.MONTH_FMT.format(Sync.getDate(name)) + "/" + name;
+    }
 }

@@ -82,10 +82,6 @@ public class Sync {
         }
     }
 
-    public static FileNode getFile(String name, FileNode root, String ext) {
-        return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
-    }
-
     public static Date getDate(String name) {
         Date date;
 

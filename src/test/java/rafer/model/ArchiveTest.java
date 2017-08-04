@@ -27,7 +27,7 @@ public class ArchiveTest {
         file = WORLD.getTemp().createTempDirectory().join("r170612x0001.raf");
         file.writeString("abc");
         master = new Volume("master", dir).open();
-        master.moveInto(file);
+        master.moveInto(file, file.getName());
         assertFalse(file.exists());
         assertTrue(master.verify(true).isEmpty());
 
@@ -35,30 +35,30 @@ public class ArchiveTest {
 
         // add file
         patch = slave.diff(master);
-        assertEquals("A 2017/06/r170612x0001.raf\n", patch.toString());
+        assertEquals("A r170612x0001.raf\n", patch.toString());
         patch.apply();
-        assertEquals("abc", slave.getFile(file.getName(), "").readString());
+        assertEquals("abc", slave.getFile(file.getName()).readString());
         assertTrue(slave.diff(master).isEmpty());
         assertTrue(master.diff(slave).isEmpty());
 
         // update file
-        master.getFile("r170612x0001.raf").writeString("xyz");
+        master.getFile(file.getName()).writeString("xyz");
         master.verify(true).apply();
         patch = slave.diff(master);
-        assertEquals("U 2017/06/r170612x0001.raf\n", patch.toString());
+        assertEquals("U r170612x0001.raf\n", patch.toString());
         patch.apply();
         assertTrue(slave.diff(master).isEmpty());
         assertTrue(master.diff(slave).isEmpty());
 
-        assertEquals("xyz", slave.getFile(file.getName(), "").readString());
+        assertEquals("xyz", slave.getFile(file.getName()).readString());
 
 
         // remove file
-        master.getFile("r170612x0001.raf").deleteFile();
+        master.getFile(file.getName()).deleteFile();
         master.verify(true).apply();
         assertEquals(0, master.size());
         patch = slave.diff(master);
-        assertEquals("D 2017/06/r170612x0001.raf\n", patch.toString());
+        assertEquals("D r170612x0001.raf\n", patch.toString());
         patch.apply();
         assertEquals(0, slave.size());
 

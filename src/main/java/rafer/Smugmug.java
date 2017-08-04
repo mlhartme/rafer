@@ -107,7 +107,7 @@ public class Smugmug {
             if (getDate(name).before(START_DATE)) {
                 // skip
             } else {
-                raf = local.getFile(removeExtension(name), Utils.RAF);
+                raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
                 if (!raf.exists()) {
                     console.info.println("D " + name);
                     account.albumImage(image.uri).delete();

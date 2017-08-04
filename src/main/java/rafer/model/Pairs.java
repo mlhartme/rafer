@@ -114,10 +114,12 @@ public class Pairs {
 
     public void moveRafs(Archive dest) throws IOException {
         FileNode src;
+        long modified;
 
         for (Map.Entry<String, Long> entry : pairs.entrySet()) {
             src = directory.join(entry.getKey() + Utils.RAF);
-            dest.moveInto(src);
+            modified = entry.getValue();
+            dest.moveInto(src, Utils.MONTH_FMT.format(modified) + "/" + src.getName());
         }
     }
 

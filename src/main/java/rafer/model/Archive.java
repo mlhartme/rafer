@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.Date;
 
 /**
- * Index and directory containing image files. Uses the file get the modified date, adjusts the directory structure accordingly.
+ * Index and directory containing files.
  */
 public class Archive implements AutoCloseable {
     public static Archive open(FileNode directory, Date start, Date end) throws IOException {
@@ -30,14 +30,11 @@ public class Archive implements AutoCloseable {
         return start.before(date) && date.before(end);
     }
 
-    // TODO: dont adjust file name with date before calling this method; moveInfo should change the name itself
-    public void moveInto(FileNode src) throws IOException {
-        Date modified;
+    // TODO: don't adjust file name with date before calling this method; moveInfo should change the name itself
+    public FileNode moveInto(FileNode src, String path) throws IOException {
         FileNode dest;
-        String path;
 
-        modified = Sync.getDate(src.getName());
-        dest = directory.join(Utils.MONTH_FMT.format(modified), src.getName());
+        dest = directory.join(path);
         dest.getParent().mkdirsOpt();
         if (dest.exists()) {
             // TODO
@@ -49,10 +46,13 @@ public class Archive implements AutoCloseable {
                 System.out.println(dest + " exists");
             }
         }
+        long mod = src.getLastModified();
         src.move(dest); // don't copy - disk might be full
-        dest.setLastModified(modified.getTime());
-        path = dest.getRelative(directory);
+        if (dest.getLastModified() != mod) {
+            throw new IllegalStateException("move modified the file");
+        }
         index.put(path, dest.md5());
+        return dest;
     }
 
     /** @return patch to bring this Archive in line with orig */
@@ -123,12 +123,8 @@ public class Archive implements AutoCloseable {
         return Index.load(directory).size();
     }
 
-    public FileNode getFile(String name) {
-        return directory.join(Utils.MONTH_FMT.format(Sync.getDate(name)), name);
-    }
-
-    public FileNode getFile(String basename, String ext) {
-        return Sync.getFile(basename, directory, ext);
+    public FileNode getFile(String path) {
+        return directory.join(path);
     }
 
     // does not compare then name

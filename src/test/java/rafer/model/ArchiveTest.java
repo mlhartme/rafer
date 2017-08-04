@@ -19,6 +19,7 @@ public class ArchiveTest {
     public void verify() throws IOException {
         FileNode dir;
         FileNode file;
+        FileNode other;
         Archive master;
         Archive slave;
         Patch patch;
@@ -26,22 +27,26 @@ public class ArchiveTest {
         dir = WORLD.getTemp().createTempDirectory();
         file = WORLD.getTemp().createTempDirectory().join("r170612x0001.raf");
         file.writeString("abc");
+        other = file.getParent().join("other.jpg");
+        other.writeString("123");
         master = new Volume("master", dir).open();
         master.moveInto(file, file.getName());
+        master.moveInto(other, other.getName());
         assertFalse(file.exists());
         assertTrue(master.verify(true).isEmpty());
 
         slave = new Volume("slave", WORLD.getTemp().createTempDirectory()).open();
 
-        // add file
+        // add 2 files
         patch = slave.diff(master);
-        assertEquals("A r170612x0001.raf\n", patch.toString());
+        assertEquals("A other.jpg\nA r170612x0001.raf\n", patch.toString());
         patch.apply();
         assertEquals("abc", slave.getFile(file.getName()).readString());
         assertTrue(slave.diff(master).isEmpty());
         assertTrue(master.diff(slave).isEmpty());
+        assertEquals(2, slave.size());
 
-        // update file
+        // update 1 file
         master.getFile(file.getName()).writeString("xyz");
         master.verify(true).apply();
         patch = slave.diff(master);
@@ -56,11 +61,12 @@ public class ArchiveTest {
         // remove file
         master.getFile(file.getName()).deleteFile();
         master.verify(true).apply();
-        assertEquals(0, master.size());
+        assertEquals(1, master.size());
+
         patch = slave.diff(master);
         assertEquals("D r170612x0001.raf\n", patch.toString());
         patch.apply();
-        assertEquals(0, slave.size());
+        assertEquals(1, slave.size());
 
     }
 }

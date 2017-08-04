@@ -1,10 +1,11 @@
 package rafer.model;
 
 import net.oneandone.sushi.fs.file.FileNode;
-import rafer.Sync;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Index and directory containing files.
@@ -57,13 +58,13 @@ public class Archive implements AutoCloseable {
 
     /** @return patch to bring this Archive in line with orig */
     public Patch diff(Archive master) throws IOException {
-        Date date;
+        Set<String> commons;
         Patch patch;
 
         patch = new Patch();
+        commons = master.firsts();
         for (String path : index) {
-            date = getDate(path);
-            if (!master.contains(date)) {
+            if (!startsWith(commons, path)) {
                 continue;
             }
             final String md5 = master.index.get(path);
@@ -86,8 +87,7 @@ public class Archive implements AutoCloseable {
             }
         }
         for (String path : master.index) {
-            date = getDate(path);
-            if (!contains(date)) {
+            if (!startsWith(commons, path)) {
                 continue;
             }
             final String md5 = index.get(path);
@@ -110,8 +110,26 @@ public class Archive implements AutoCloseable {
         return patch;
     }
 
-    public static Date getDate(String path) {
-        return Sync.getDate(path.substring(path.lastIndexOf('/') + 1));
+    public Set<String> firsts() {
+        Set<String> result;
+
+        result = new HashSet<>();
+        for (String path : index) {
+            result.add(first(path));
+        }
+        return result;
+    }
+
+    // TODO: first("foo").equals(first("/foo")
+    private static String first(String path) {
+        int idx;
+
+        idx = path.indexOf('/');
+        return idx == -1 ? "" : path.substring(0, idx);
+    }
+
+    public static boolean startsWith(Set<String> firsts, String path) {
+        return firsts.contains(first(path));
     }
 
     /** @return patch to adjust index; fill will not be changed */

@@ -51,7 +51,7 @@ public class Index {
                 return;
             }
             console.info.println(patch);
-            console.readline("Press return to fix, ctrl-c to abort: ");
+            console.readline("Press return apply " + patch.size() + " changes, ctrl-c to abort: ");
             patch.apply();
         }
     }

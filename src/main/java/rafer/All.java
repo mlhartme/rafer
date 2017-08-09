@@ -15,17 +15,11 @@
  */
 package rafer;
 
-import net.mlhartme.smuggler.cache.FolderData;
-import net.mlhartme.smuggler.cache.ImageData;
-import net.mlhartme.smuggler.cli.Config;
-import net.mlhartme.smuggler.smugmug.Account;
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.util.Strings;
 import rafer.model.Archive;
-import rafer.model.Pairs;
 import rafer.model.Patch;
 import rafer.model.Utils;
 import rafer.model.Volume;
@@ -34,17 +28,15 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 
-public class Sync {
-    private final World world;
+public class All {
     private final Console console;
     private final rafer.model.Config config;
 
-    public Sync(World world, Console console) throws IOException {
-        this(world, console, rafer.model.Config.load(world));
+    public All(World world, Console console) throws IOException {
+        this(console, rafer.model.Config.load(world));
     }
 
-    public Sync(World world, Console console, rafer.model.Config config) {
-        this.world = world;
+    public All(Console console, rafer.model.Config config) {
         this.console = console;
         this.config = config;
     }

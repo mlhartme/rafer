@@ -5,7 +5,7 @@ import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.fs.filter.Filter;
 import net.oneandone.sushi.util.Strings;
-import rafer.Sync;
+import rafer.All;
 
 import java.io.IOException;
 import java.nio.file.FileStore;
@@ -32,7 +32,7 @@ public class Card {
         List<FileNode> downloaded;
         FileNode dcim;
 
-        Sync.directory("card", directory);
+        All.directory("card", directory);
 
         dcim = directory.join("DCIM");
         cardRafs = findRafs(console, dcim);
@@ -60,10 +60,10 @@ public class Card {
                 break;
             }
             destRaf = dest.join(srcRaf.getName());
-            destJpg = Sync.jpg(destRaf);
+            destJpg = All.jpg(destRaf);
             result.add(srcRaf);
             srcRaf.copyFile(destRaf);
-            Sync.jpg(srcRaf).copyFile(destJpg);
+            All.jpg(srcRaf).copyFile(destJpg);
         }
         return result;
     }
@@ -101,7 +101,7 @@ public class Card {
             destRaf = downloaded.join(path);
             destRaf.getParent().mkdirsOpt();
             srcRaf.move(destRaf);
-            Sync.jpg(srcRaf).move(Sync.jpg(destRaf));
+            All.jpg(srcRaf).move(All.jpg(destRaf));
         }
         if (findRafs(console, src).isEmpty()) {
             console.info.println("complete download, removing " + src);
@@ -120,7 +120,7 @@ public class Card {
         filter.exclude("**/._*.RAF");
         result = dcim.find(filter);
         for (Node raf : result) {
-            if (!Sync.jpg((FileNode) raf).exists()) {
+            if (!All.jpg((FileNode) raf).exists()) {
                 throw new IOException("missing jpg for " + raf);
             }
         }

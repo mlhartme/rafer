@@ -5,7 +5,7 @@ import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
-import rafer.Sync;
+import rafer.All;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,7 +72,7 @@ public class Pairs {
         long firstTimestamp;
         long lastTimestamp;
 
-        Sync.directory("gpxTracks", gpxTracks);
+        All.directory("gpxTracks", gpxTracks);
         values = pairs.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);
@@ -128,7 +128,7 @@ public class Pairs {
         FileNode dest;
 
         for (String name : pairs.keySet()) {
-            src = directory.join(name + Utils.RAF);
+            src = directory.join(name + Utils.JPG);
             dest = smugmugInbox.join(src.getName());
             dest.checkNotExists();
             src.move(dest);

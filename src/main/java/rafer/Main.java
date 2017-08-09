@@ -45,7 +45,7 @@ public final class Main {
                         .add(PackageVersion.class, "version")
                         .add(Import.class, "import")
                         .add(Smugmug.class, "smugmug")
-                        .add(Sync.class, "sync")
+                        .add(All.class, "all")
                         .add(Status.class, "status")
                         .add(Copy.class, "copy master slave")
                         .add(Index.class, "index -md5 dir");
@@ -71,7 +71,7 @@ public final class Main {
                 + "  'copy' master slave    sync changes from master to slave\n"
                 + "  'import'               import card into local and smugmug inbox\n"
                 + "  'smugmug'              smugmug upload\n"
-                + "  'sync'                 synchronize volumes and smugmug inbox\n"
+                + "  'all'                  synchronize volumes and smugmug inbox\n"
         );
         return builder.toString();
     }

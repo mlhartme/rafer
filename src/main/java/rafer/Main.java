@@ -45,10 +45,10 @@ public final class Main {
                         .add(PackageVersion.class, "version")
                         .add(Import.class, "import")
                         .add(Smugmug.class, "smugmug")
-                        .add(All.class, "all")
                         .add(Status.class, "status")
-                        .add(Copy.class, "copy master slave")
-                        .add(Index.class, "index -md5 dir");
+                        .add(Sync.class, "sync master slave")
+                        .add(Index.class, "index -md5 dir")
+                        .add(All.class, "all");
             try {
                 result = cli.run(args);
                 return result;
@@ -68,7 +68,7 @@ public final class Main {
                 + "commands\n"
                 + "  'status'               print status of all volumes\n"
                 + "  'index' volume         create or update volume index; this is kind of a commit command\n"
-                + "  'copy' master slave    sync changes from master to slave\n"
+                + "  'sync' master slave    sync changes from master to slave\n"
                 + "  'import'               import card into local and smugmug inbox\n"
                 + "  'smugmug'              smugmug upload\n"
                 + "  'all'                  synchronize volumes and smugmug inbox\n"

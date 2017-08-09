@@ -2,7 +2,7 @@ package rafer.model;
 
 import java.io.IOException;
 
-public abstract class Action {
+public abstract class Action implements Comparable<Action> {
     private final String message;
 
     public Action(String message) {
@@ -13,5 +13,9 @@ public abstract class Action {
 
     public String toString() {
         return message;
+    }
+
+    public int compareTo(Action action) {
+        return toString().compareTo(action.toString());
     }
 }

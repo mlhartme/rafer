@@ -3,14 +3,14 @@ package rafer.model;
 import net.oneandone.inline.Console;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.TreeSet;
 
 public class Patch {
-    private final List<Action> actions;
+    private final Collection<Action> actions;
 
     public Patch() {
-        this.actions = new ArrayList<>();
+        this.actions = new TreeSet<>();
     }
 
     public void add(Action action) {
@@ -29,6 +29,7 @@ public class Patch {
         errors = 0;
         for (Action action : actions) {
             try {
+                console.info.println(action.toString());
                 action.invoke();
             } catch (IOException e) {
                 console.error.println("error: " + action.toString() + ": " + e.getMessage());

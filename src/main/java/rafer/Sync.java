@@ -25,12 +25,12 @@ import rafer.model.Volume;
 
 import java.io.IOException;
 
-public class Copy {
+public class Sync {
     private final Console console;
     private final Volume master;
     private final Volume slave;
 
-    public Copy(World world, Console console, String master, String slave) throws IOException {
+    public Sync(World world, Console console, String master, String slave) throws IOException {
         Config config;
 
         config = Config.load(world);
@@ -58,8 +58,8 @@ public class Copy {
                 return;
             }
             console.info.println(patch);
-            console.readline("Press return to fix, ctrl-c to abort: ");
-            patch.apply();
+            console.readline("Press return to sync " + patch.size() + " files, ctrl-c to abort: ");
+            patch.applyAndReport(console);
         }
     }
 }

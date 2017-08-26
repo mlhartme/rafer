@@ -48,7 +48,6 @@ public class Smugmug {
         Process process;
         Account smugmugAccount;
         FolderData smugmugRoot;
-        FileNode tmp;
         Volume localVolume;
         List<Volume> backups;
 
@@ -57,17 +56,15 @@ public class Smugmug {
         if (!localVolume.available()) {
             throw new IOException("local archive not available");
         }
-        if (config.smugmug != null) {
-            config.smugmug.checkFile();
-            smugmugAccount = Config.load(world).newSmugmug(world);
-            smugmugRoot = FolderData.load(config.smugmug);
-        } else {
-            smugmugAccount = null;
-            smugmugRoot = null;
+        if (config.smugmug == null) {
+            throw new IOException("smugmug not configured");
         }
+        config.smugmug.checkFile();
+        smugmugAccount = Config.load(world).newSmugmug(world);
+        smugmugRoot = FolderData.load(config.smugmug);
         process = new ProcessBuilder("caffeinate").start();
         try (Archive local = localVolume.open()) {
-            smugmugSync(smugmugAccount, smugmugRoot, local);
+            sync(smugmugAccount, smugmugRoot, local);
         } finally {
             if (smugmugAccount != null) {
                 smugmugRoot.sort();
@@ -77,9 +74,9 @@ public class Smugmug {
         }
     }
 
-    public void smugmugSync(Account account, FolderData root, Archive local) throws IOException {
+    public void sync(Account account, FolderData root, Archive local) throws IOException {
         console.info.println("smugmug sync ...");
-        smugmugDeletes(account, root, local);
+        remoteDeletes(account, root, local);
         console.info.println("done");
     }
 
@@ -93,7 +90,7 @@ public class Smugmug {
         }
     }
 
-    public void smugmugDeletes(Account account, FolderData root, Archive local) throws IOException {
+    public void remoteDeletes(Account account, FolderData root, Archive local) throws IOException {
         FileNode raf;
         Map<String, ImageData> remoteMap;
         String name;

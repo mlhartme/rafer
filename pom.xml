@@ -25,12 +25,12 @@
     <dependency>
       <groupId>net.oneandone</groupId>
       <artifactId>sushi</artifactId>
-      <version>3.1.1</version>
+      <version>3.1.6</version>
     </dependency>
     <dependency>
       <groupId>net.oneandone</groupId>
       <artifactId>inline</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>net.mlhartme</groupId>

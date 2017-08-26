@@ -108,8 +108,10 @@ public class Smugmug {
                 if (image == null) {
                     console.info.println("A " + name);
                 } else {
-                    console.info.println("D " + name);
+                    console.info.println("U " + name);
                 }
+                root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory)).upload(account, jpg);
+                jpg.deleteFile();
             } else {
                 // raf has been removed from master -> remove from inbox, don't upload
                 console.info.println("R " + name);

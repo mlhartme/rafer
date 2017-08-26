@@ -15,7 +15,7 @@ public class Archive implements AutoCloseable {
         return new Archive(directory, Index.load(directory), start, end);
     }
 
-    private final FileNode directory;
+    public final FileNode directory;
     private final Index index;
     private final Date start; // inclusive [
     private final Date end; // [ exclusive

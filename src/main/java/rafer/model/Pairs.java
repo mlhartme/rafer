@@ -5,7 +5,6 @@ import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
 import net.oneandone.sushi.launcher.Launcher;
 import net.oneandone.sushi.util.Strings;
-import rafer.All;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,7 +71,7 @@ public class Pairs {
         long firstTimestamp;
         long lastTimestamp;
 
-        All.directory("gpxTracks", gpxTracks);
+        Utils.directory("gpxTracks", gpxTracks);
         values = pairs.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);

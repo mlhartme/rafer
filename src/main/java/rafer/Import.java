@@ -72,45 +72,4 @@ public class Import {
             process.destroy();
         }
     }
-
-    public static FileNode getJpgFile(String name, FileNode root) {
-        return getFile(name, root, Utils.JPG);
-    }
-    public static FileNode getFile(String name, FileNode root, String ext) {
-        return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
-    }
-
-    public static Date getDate(String name) {
-        Date date;
-
-        if (!name.startsWith("r") || name.indexOf('x') != 7) {
-            throw new IllegalArgumentException("not a lined name: " + name);
-        }
-        try {
-            date = Utils.LINKED_FMT.parse(name.substring(1, 7));
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
-        return date;
-    }
-
-    public static String removeExtension(String str) {
-        int idx;
-
-        idx = str.lastIndexOf('.');
-        if (idx == -1) {
-            throw new IllegalArgumentException(str);
-        }
-        return str.substring(0, idx);
-    }
-
-    public static void directory(String name, FileNode dir) throws IOException {
-        if (!dir.isDirectory()) {
-            throw new IOException(name + " not found: " + dir.getAbsolute());
-        }
-    }
-
-    public static FileNode jpg(FileNode raf) {
-        return raf.getParent().join(Strings.removeRight(raf.getName(), Utils.RAF) + Utils.JPG);
-    }
 }

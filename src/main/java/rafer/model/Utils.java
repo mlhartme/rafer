@@ -15,9 +15,13 @@
  */
 package rafer.model;
 
-import rafer.All;
+import net.oneandone.sushi.fs.file.FileNode;
+import net.oneandone.sushi.util.Strings;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Utils {
     public static final SimpleDateFormat LINKED_FMT = new SimpleDateFormat("yyMMdd");
@@ -28,6 +32,31 @@ public class Utils {
     public static final String JPG = ".JPG";
 
     public static String getPath(String name) {
-        return Utils.MONTH_FMT.format(All.getDate(name)) + "/" + name;
+
+        return Utils.MONTH_FMT.format(Utils.getDate(name)) + "/" + name;
+    }
+
+    public static Date getDate(String name) {
+        Date date;
+
+        if (!name.startsWith("r") || name.indexOf('x') != 7) {
+            throw new IllegalArgumentException("not a lined name: " + name);
+        }
+        try {
+            date = Utils.LINKED_FMT.parse(name.substring(1, 7));
+        } catch (ParseException e) {
+            throw new IllegalStateException(e);
+        }
+        return date;
+    }
+
+    public static void directory(String name, FileNode dir) throws IOException {
+        if (!dir.isDirectory()) {
+            throw new IOException(name + " not found: " + dir.getAbsolute());
+        }
+    }
+
+    public static FileNode jpg(FileNode raf) {
+        return raf.getParent().join(Strings.removeRight(raf.getName(), Utils.RAF) + Utils.JPG);
     }
 }

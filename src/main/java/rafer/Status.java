@@ -28,16 +28,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Status {
-    private final World world;
     private final Console console;
     private final rafer.model.Config config;
 
     public Status(World world, Console console) throws IOException {
-        this(world, console, rafer.model.Config.load(world));
+        this(console, rafer.model.Config.load(world));
     }
 
-    public Status(World world, Console console, rafer.model.Config config) {
-        this.world = world;
+    public Status(Console console, rafer.model.Config config) {
         this.console = console;
         this.config = config;
     }

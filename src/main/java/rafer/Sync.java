@@ -25,16 +25,15 @@ import rafer.model.Volume;
 
 import java.io.IOException;
 
-public class Sync {
-    private final Console console;
+public class Sync extends Base {
     private final Volume master;
     private final Volume slave;
 
     public Sync(World world, Console console, String master, String slave) throws IOException {
+        super(console, true);
         Config config;
 
         config = Config.load(world);
-        this.console = console;
         this.master = config.lookup(master);
         if (this.master == null) {
             throw new ArgumentException("no such volume: " + master);
@@ -48,7 +47,7 @@ public class Sync {
         }
     }
 
-    public void run() throws IOException {
+    public void doRun() throws IOException {
         Patch patch;
 
         try (Archive from = master.open(); Archive to = slave.open()) {

@@ -27,8 +27,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Status {
-    private final Console console;
+public class Status extends Base {
     private final rafer.model.Config config;
 
     public Status(World world, Console console) throws IOException {
@@ -36,11 +35,11 @@ public class Status {
     }
 
     public Status(Console console, rafer.model.Config config) {
-        this.console = console;
+        super(console, false);
         this.config = config;
     }
 
-    public void run() throws IOException {
+    public void doRun() throws IOException {
         String status;
         FolderData smugmugRoot;
         Map<String, ImageData> remoteMap;

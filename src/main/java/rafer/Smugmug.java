@@ -29,9 +29,8 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 
-public class Smugmug {
+public class Smugmug extends Base {
     private final World world;
-    private final Console console;
     private final rafer.model.Config config;
 
     public Smugmug(World world, Console console) throws IOException {
@@ -39,13 +38,12 @@ public class Smugmug {
     }
 
     public Smugmug(World world, Console console, rafer.model.Config config) {
+        super(console, true);
         this.world = world;
-        this.console = console;
         this.config = config;
     }
 
-    public void run() throws IOException {
-        Process process;
+    public void doRun() throws IOException {
         Account smugmugAccount;
         FolderData smugmugRoot;
         Volume localVolume;
@@ -62,15 +60,11 @@ public class Smugmug {
         config.smugmug.checkFile();
         smugmugAccount = Config.load(world).newSmugmug(world);
         smugmugRoot = FolderData.load(config.smugmug);
-        process = new ProcessBuilder("caffeinate").start();
         try (Archive local = localVolume.open()) {
             sync(smugmugAccount, smugmugRoot, local);
         } finally {
-            if (smugmugAccount != null) {
-                smugmugRoot.sort();
-                config.smugmug.writeString(smugmugRoot.toString());
-            }
-            process.destroy();
+            smugmugRoot.sort();
+            config.smugmug.writeString(smugmugRoot.toString());
         }
     }
 

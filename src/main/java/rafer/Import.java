@@ -18,16 +18,12 @@ package rafer;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.util.Strings;
 import rafer.model.*;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.util.*;
 
-public class Import {
+public class Import extends Base {
     private final World world;
-    private final Console console;
     private final rafer.model.Config config;
 
     public Import(World world, Console console) throws IOException {
@@ -35,12 +31,12 @@ public class Import {
     }
 
     public Import(World world, Console console, rafer.model.Config config) {
+        super(console, true);
         this.world = world;
-        this.console = console;
         this.config = config;
     }
 
-    public void run() throws IOException {
+    public void doRun() throws IOException {
         Process process;
         FileNode tmp;
         Volume localVolume;

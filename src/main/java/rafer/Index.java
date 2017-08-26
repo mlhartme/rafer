@@ -27,13 +27,12 @@ import rafer.model.Volume;
 
 import java.io.IOException;
 
-public class Index {
-    private final Console console;
+public class Index extends Base {
     private final boolean md5;
     private final Volume volume;
 
     public Index(World world, Console console, boolean md5, String name) throws IOException {
-        this.console = console;
+        super(console, false);
         this.md5 = md5;
         this.volume = Config.load(world).lookup(name);
         if (this.volume == null) {
@@ -41,7 +40,7 @@ public class Index {
         }
     }
 
-    public void run() throws IOException {
+    public void doRun() throws IOException {
         Patch patch;
 
         try (Archive archive = volume.open()) {

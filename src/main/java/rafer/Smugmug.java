@@ -76,7 +76,8 @@ public class Smugmug {
 
     public void sync(Account account, FolderData root, Archive local) throws IOException {
         console.info.println("smugmug sync ...");
-        remoteDeletes(account, root, local);
+        deletes(account, root, local);
+        updates(account, root, local);
         console.info.println("done");
     }
 
@@ -90,7 +91,34 @@ public class Smugmug {
         }
     }
 
-    public void remoteDeletes(Account account, FolderData root, Archive local) throws IOException {
+    public void updates(Account account, FolderData root, Archive local) throws IOException {
+        FileNode raf;
+        Map<String, ImageData> remoteMap;
+        String name;
+        ImageData image;
+
+        remoteMap = new HashMap<>();
+        root.imageMap(remoteMap);
+        for (FileNode jpg : config.smugmugInbox.list()) {
+            jpg.checkFile();
+            name = jpg.getName();
+            raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
+            if (raf.exists()) {
+                image = remoteMap.get(name);
+                if (image == null) {
+                    console.info.println("A " + name);
+                } else {
+                    console.info.println("D " + name);
+                }
+            } else {
+                // raf has been removed from master -> remove from inbox, don't upload
+                console.info.println("R " + name);
+                jpg.deleteFile();
+            }
+        }
+    }
+
+    public void deletes(Account account, FolderData root, Archive local) throws IOException {
         FileNode raf;
         Map<String, ImageData> remoteMap;
         String name;

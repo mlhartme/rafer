@@ -15,10 +15,12 @@
  */
 package rafer;
 
+import net.mlhartme.smuggler.cache.AlbumData;
 import net.mlhartme.smuggler.cache.FolderData;
 import net.mlhartme.smuggler.cache.ImageData;
 import net.mlhartme.smuggler.cli.Config;
 import net.mlhartme.smuggler.smugmug.Account;
+import net.mlhartme.smuggler.smugmug.Album;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
@@ -90,6 +92,7 @@ public class Smugmug extends Base {
         Map<String, ImageData> remoteMap;
         String name;
         ImageData image;
+        AlbumData album;
 
         remoteMap = new HashMap<>();
         root.imageMap(remoteMap);
@@ -101,10 +104,17 @@ public class Smugmug extends Base {
                 image = remoteMap.get(name);
                 if (image == null) {
                     console.info.println("A " + name);
+                    root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory)).upload(account, jpg);
+                } else if (image.md5.equals(jpg.md5())) {
+                    console.info.println("  " + name);
                 } else {
                     console.info.println("U " + name);
+                    album = root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory));
+                    if (!album.images.remove(image)) {
+                        throw new IllegalStateException();
+                    }
+                    album.upload(account, jpg);
                 }
-                root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory)).upload(account, jpg);
                 jpg.deleteFile();
             } else {
                 // raf has been removed from master -> remove from inbox, don't upload

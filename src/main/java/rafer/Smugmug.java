@@ -77,43 +77,38 @@ public class Smugmug extends Base {
         console.info.println("done");
     }
 
-    public static final Date START_DATE;
-
-    static {
-        try {
-            START_DATE = Utils.LINKED_FMT.parse("170101");
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public void updates(Account account, FolderData root, Archive local) throws IOException {
         FileNode raf;
         Map<String, ImageData> remoteMap;
         String name;
         ImageData image;
         AlbumData album;
+        String md5;
 
         remoteMap = new HashMap<>();
         root.imageMap(remoteMap);
+        remoteMap = toLowerCase(remoteMap);
         for (FileNode jpg : config.smugmugInbox.list()) {
             jpg.checkFile();
             name = jpg.getName();
             raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
             if (raf.exists()) {
-                image = remoteMap.get(name);
+                image = remoteMap.get(name.toLowerCase());
                 if (image == null) {
                     console.info.println("A " + name);
                     root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory)).upload(account, jpg);
-                } else if (image.md5.equals(jpg.md5())) {
-                    console.info.println("  " + name);
                 } else {
-                    console.info.println("U " + name);
-                    album = root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory));
-                    if (!album.images.remove(image)) {
-                        throw new IllegalStateException();
+                    md5 = jpg.md5();
+                    if (image.md5.equals(md5)) {
+                        console.info.println("  " + name);
+                    } else {
+                        console.info.println("U " + name);
+                        album = root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory));
+                        if (!album.images.remove(image)) {
+                            throw new IllegalStateException();
+                        }
+                        album.upload(account, jpg);
                     }
-                    album.upload(account, jpg);
                 }
                 jpg.deleteFile();
             } else {
@@ -122,6 +117,16 @@ public class Smugmug extends Base {
                 jpg.deleteFile();
             }
         }
+    }
+
+    private  Map<String, ImageData> toLowerCase(Map<String, ImageData> remoteMap) {
+        Map<String, ImageData> result;
+
+        result = new HashMap<>(remoteMap.size());
+        for (Map.Entry<String, ImageData> entry : remoteMap.entrySet()) {
+            result.put(entry.getKey().toLowerCase(), entry.getValue());
+        }
+        return result;
     }
 
     public void deletes(Account account, FolderData root, Archive local) throws IOException {
@@ -135,16 +140,12 @@ public class Smugmug extends Base {
         for (Map.Entry<String, ImageData> entry : remoteMap.entrySet()) {
             name = entry.getKey();
             image = entry.getValue();
-            if (getDate(name).before(START_DATE)) {
-                // skip
-            } else {
-                raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
-                if (!raf.exists()) {
-                    console.info.println("D " + name);
-                    account.albumImage(image.uri).delete();
-                    if (!image.album.images.remove(image)) {
-                        throw new IllegalStateException();
-                    }
+            raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
+            if (!raf.exists()) {
+                console.info.println("D " + name);
+                account.albumImage(image.uri).delete();
+                if (!image.album.images.remove(image)) {
+                    throw new IllegalStateException();
                 }
             }
         }

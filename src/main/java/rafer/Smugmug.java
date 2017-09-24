@@ -130,18 +130,18 @@ public class Smugmug extends Base {
     }
 
     public void deletes(Account account, FolderData root, Archive local) throws IOException {
-        FileNode raf;
         Map<String, ImageData> remoteMap;
         String name;
         ImageData image;
+        Set<String> names;
 
+        names = local.names();
         remoteMap = new HashMap<>();
         root.imageMap(remoteMap);
         for (Map.Entry<String, ImageData> entry : remoteMap.entrySet()) {
             name = entry.getKey();
             image = entry.getValue();
-            raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
-            if (!raf.exists()) {
+            if (!names.contains(removeExtension(name))) {
                 console.info.println("D " + name);
                 account.albumImage(image.uri).delete();
                 if (!image.album.images.remove(image)) {

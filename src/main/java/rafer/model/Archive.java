@@ -1,6 +1,7 @@
 package rafer.model;
 
 import net.oneandone.sushi.fs.file.FileNode;
+import rafer.Smugmug;
 
 import java.io.IOException;
 import java.util.Date;
@@ -116,6 +117,20 @@ public class Archive implements AutoCloseable {
         result = new HashSet<>();
         for (String path : index) {
             result.add(first(path));
+        }
+        return result;
+    }
+
+    public Set<String> names() {
+        Set<String> result;
+        int idx;
+        String name;
+
+        result = new HashSet<>(index.size());
+        for (String path : index) {
+            idx = path.lastIndexOf('/');
+            name = path.substring(idx + 1);
+            result.add(Smugmug.removeExtension(name));
         }
         return result;
     }

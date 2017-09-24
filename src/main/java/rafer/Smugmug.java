@@ -20,15 +20,12 @@ import net.mlhartme.smuggler.cache.FolderData;
 import net.mlhartme.smuggler.cache.ImageData;
 import net.mlhartme.smuggler.cli.Config;
 import net.mlhartme.smuggler.smugmug.Account;
-import net.mlhartme.smuggler.smugmug.Album;
 import net.oneandone.inline.Console;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.util.Strings;
 import rafer.model.*;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.*;
 
 public class Smugmug extends Base {
@@ -152,24 +149,6 @@ public class Smugmug extends Base {
         }
     }
 
-    public static FileNode getFile(String name, FileNode root, String ext) {
-        return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
-    }
-
-    public static Date getDate(String name) {
-        Date date;
-
-        if (!name.startsWith("r") || name.indexOf('x') != 7) {
-            throw new IllegalArgumentException("not a lined name: " + name);
-        }
-        try {
-            date = Utils.LINKED_FMT.parse(name.substring(1, 7));
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
-        return date;
-    }
-
     public static String removeExtension(String str) {
         int idx;
 
@@ -178,15 +157,5 @@ public class Smugmug extends Base {
             throw new IllegalArgumentException(str);
         }
         return str.substring(0, idx);
-    }
-
-    public static void directory(String name, FileNode dir) throws IOException {
-        if (!dir.isDirectory()) {
-            throw new IOException(name + " not found: " + dir.getAbsolute());
-        }
-    }
-
-    public static FileNode jpg(FileNode raf) {
-        return raf.getParent().join(Strings.removeRight(raf.getName(), Utils.RAF) + Utils.JPG);
     }
 }

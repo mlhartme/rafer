@@ -78,32 +78,34 @@ public class Smugmug extends Base {
     }
 
     public void updates(Account account, FolderData root, Archive local) throws IOException {
-        FileNode raf;
+        FileNode parent;
         Map<String, ImageData> remoteMap;
         String name;
         ImageData image;
         AlbumData album;
         String md5;
+        Set<String> names;
 
         remoteMap = new HashMap<>();
         root.imageMap(remoteMap);
         remoteMap = toLowerCase(remoteMap);
+        names = local.names();
         for (FileNode jpg : config.smugmugInbox.list()) {
             jpg.checkFile();
             name = jpg.getName();
-            raf = local.getFile(Utils.getPath(removeExtension(name) + Utils.RAF));
-            if (raf.exists()) {
+            if (names.contains(removeExtension(name))) {
+                parent = local.getFile(Utils.getParent(removeExtension(name)));
                 image = remoteMap.get(name.toLowerCase());
                 if (image == null) {
                     console.info.println("A " + name);
-                    root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory)).upload(account, jpg);
+                    root.getOrCreateAlbum(account, parent.getRelative(local.directory)).upload(account, jpg);
                 } else {
                     md5 = jpg.md5();
                     if (image.md5.equals(md5)) {
                         console.info.println("  " + name);
                     } else {
                         console.info.println("U " + name);
-                        album = root.getOrCreateAlbum(account, raf.getParent().getRelative(local.directory));
+                        album = root.getOrCreateAlbum(account, parent.getRelative(local.directory));
                         if (!album.images.remove(image)) {
                             throw new IllegalStateException();
                         }
@@ -112,9 +114,8 @@ public class Smugmug extends Base {
                 }
                 jpg.deleteFile();
             } else {
-                // raf has been removed from master -> remove from inbox, don't upload
-                console.info.println("R " + name);
-                jpg.deleteFile();
+                // inbox file is unknown - ignore
+                console.info.println("! " + name);
             }
         }
     }
@@ -151,9 +152,6 @@ public class Smugmug extends Base {
         }
     }
 
-    public static FileNode getJpgFile(String name, FileNode root) {
-        return getFile(name, root, Utils.JPG);
-    }
     public static FileNode getFile(String name, FileNode root, String ext) {
         return root.join(Utils.MONTH_FMT.format(getDate(name)), name + ext);
     }

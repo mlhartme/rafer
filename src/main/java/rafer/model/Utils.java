@@ -31,9 +31,12 @@ public class Utils {
     public static final String RAF = ".RAF";
     public static final String JPG = ".JPG";
 
-    public static String getPath(String name) {
+    public static String getParent(String name) {
+        return Utils.MONTH_FMT.format(Utils.getDate(name));
+    }
 
-        return Utils.MONTH_FMT.format(Utils.getDate(name)) + "/" + name;
+    public static String getPath(String name) {
+        return getParent(name) + "/" + name;
     }
 
     public static Date getDate(String name) {

@@ -96,6 +96,20 @@ public class Index implements Iterable<String> {
         file(dir).writeString(toString());
     }
 
+    public void bak(FileNode dir) throws IOException {
+        FileNode file;
+        FileNode bak;
+
+        file = file(dir);
+        if (file.exists()) {
+            bak = file.getParent().join(file.getName() + ".bak");
+            if (bak.exists()) {
+                bak.deleteFile();
+            }
+            file.copyFile(bak);
+        }
+    }
+
     @Override
     public Iterator<String> iterator() {
         return new HashSet<>(lines.keySet()).iterator();

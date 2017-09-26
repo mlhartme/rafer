@@ -25,17 +25,22 @@ public class Patch {
 
     public int applyAndReport(Console console) {
         int errors;
+        int i;
+        int max;
 
         errors = 0;
+        i = 1;
+        max = actions.size();
         for (Action action : actions) {
             try {
-                console.info.println(action.toString());
+                console.info.println(action.toString() + " (" + i + "/" + max + ")" );
                 action.invoke();
             } catch (IOException e) {
                 console.error.println("error: " + action.toString() + ": " + e.getMessage());
                 e.printStackTrace(console.verbose);
                 errors++;
             }
+            i++;
         }
         return errors;
     }

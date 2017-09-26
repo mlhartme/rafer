@@ -68,18 +68,22 @@ public class Smugmug extends Base {
     }
 
     public void sync(Account account, FolderData root, Archive local) throws IOException {
+        Patch patch;
+
         console.info.println("smugmug sync ...");
-        deletes(account, root, local);
-        updates(account, root, local);
-        console.info.println("done");
+        patch = new Patch();
+        deletes(account, root, local, patch);
+        updates(account, root, local, patch);
+        console.info.println(patch);
+        if (!patch.isEmpty()) {
+            console.readline("Press return to sync " + patch.size() + " files, ctrl-c to abort: ");
+            patch.applyAndReport(console);
+        }
     }
 
-    public void updates(Account account, FolderData root, Archive local) throws IOException {
-        FileNode parent;
+    public void updates(Account account, FolderData root, Archive local, Patch patch) throws IOException {
         Map<String, ImageData> remoteMap;
         String name;
-        ImageData image;
-        AlbumData album;
         String md5;
         Set<String> names;
 
@@ -91,25 +95,45 @@ public class Smugmug extends Base {
             jpg.checkFile();
             name = jpg.getName();
             if (names.contains(removeExtension(name))) {
+                FileNode parent;
+                ImageData image;
+
                 parent = local.getFile(Utils.getParent(removeExtension(name)));
                 image = remoteMap.get(name.toLowerCase());
                 if (image == null) {
-                    console.info.println("A " + name);
-                    root.getOrCreateAlbum(account, parent.getRelative(local.directory)).upload(account, jpg);
+                    patch.add(new Action("A " + name) {
+                        @Override
+                        public void invoke() throws IOException {
+                            root.getOrCreateAlbum(account, parent.getRelative(local.directory)).upload(account, jpg);
+                            jpg.deleteFile();
+                        }
+                    });
                 } else {
                     md5 = jpg.md5();
                     if (image.md5.equals(md5)) {
-                        console.info.println("  " + name);
+                        patch.add(new Action("  " + name) {
+                            @Override
+                            public void invoke() throws IOException {
+                                jpg.deleteFile();
+                            }
+                        });
                     } else {
-                        console.info.println("U " + name);
-                        album = root.getOrCreateAlbum(account, parent.getRelative(local.directory));
-                        if (!album.images.remove(image)) {
-                            throw new IllegalStateException();
-                        }
-                        album.upload(account, jpg);
+                        patch.add(new Action("U " + name) {
+                            @Override
+                            public void invoke() throws IOException {
+                                AlbumData album;
+
+                                album = root.getOrCreateAlbum(account, parent.getRelative(local.directory));
+                                if (!album.images.remove(image)) {
+                                    throw new IllegalStateException();
+                                }
+                                album.upload(account, jpg);
+                                jpg.deleteFile();
+                            }
+                        });
+
                     }
                 }
-                jpg.deleteFile();
             } else {
                 // inbox file is unknown - ignore
                 console.info.println("! " + name);
@@ -127,24 +151,29 @@ public class Smugmug extends Base {
         return result;
     }
 
-    public void deletes(Account account, FolderData root, Archive local) throws IOException {
+    public void deletes(Account account, FolderData root, Archive local, Patch result) throws IOException {
         Map<String, ImageData> remoteMap;
         String name;
-        ImageData image;
         Set<String> names;
 
         names = local.names();
         remoteMap = new HashMap<>();
         root.imageMap(remoteMap);
         for (Map.Entry<String, ImageData> entry : remoteMap.entrySet()) {
+            ImageData image;
+
             name = entry.getKey();
             image = entry.getValue();
             if (!names.contains(removeExtension(name))) {
-                console.info.println("D " + name);
-                account.albumImage(image.uri).delete();
-                if (!image.album.images.remove(image)) {
-                    throw new IllegalStateException();
-                }
+                result.add(new Action("D " + name) {
+                    @Override
+                    public void invoke() throws IOException {
+                        account.albumImage(image.uri).delete();
+                        if (!image.album.images.remove(image)) {
+                            throw new IllegalStateException();
+                        }
+                    }
+                });
             }
         }
     }

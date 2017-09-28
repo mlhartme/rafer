@@ -136,7 +136,7 @@ public class Smugmug extends Base {
                 }
             } else {
                 // inbox file is unknown - ignore
-                console.info.println("! " + name);
+                console.info.println("? " + name);
             }
         }
     }
@@ -155,6 +155,7 @@ public class Smugmug extends Base {
         Map<String, ImageData> remoteMap;
         String name;
         Set<String> names;
+        List<String> sorted;
 
         names = local.names();
         remoteMap = new HashMap<>();
@@ -174,6 +175,13 @@ public class Smugmug extends Base {
                         }
                     }
                 });
+            }
+        }
+        sorted = new ArrayList<>(names);
+        Collections.sort(sorted);
+        for (String n : sorted) {
+            if (!remoteMap.containsKey(n + ".jpg")) {
+                console.info.println("! " + n);
             }
         }
     }

@@ -51,6 +51,7 @@ public class Import extends Base {
         }
         process = new ProcessBuilder("caffeinate").start();
         try (Archive local = localVolume.open()) {
+            local.backup();
             tmp = world.getTemp().createTempDirectory();
             if (!config.card.download(console, tmp)) {
                 console.info.println("no images");

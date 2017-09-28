@@ -167,11 +167,14 @@ public class Archive implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        index.bak(directory);
         index.save(directory);
     }
 
     public int size() {
         return index.size();
+    }
+
+    public void backup() throws IOException {
+        index.bak(directory);
     }
 }

@@ -51,6 +51,7 @@ public class Index extends Base {
             }
             console.info.println(patch);
             console.readline("Press return apply " + patch.size() + " changes, ctrl-c to abort: ");
+            archive.backup();
             patch.apply();
         }
     }

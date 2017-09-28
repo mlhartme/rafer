@@ -58,6 +58,7 @@ public class Sync extends Base {
             }
             console.info.println(patch);
             console.readline("Press return to sync " + patch.size() + " files, ctrl-c to abort: ");
+            to.backup();
             patch.applyAndReport(console);
         }
     }

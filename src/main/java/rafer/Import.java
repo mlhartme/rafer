@@ -37,7 +37,6 @@ public class Import extends Base {
     }
 
     public void doRun() throws IOException {
-        Process process;
         FileNode tmp;
         Volume localVolume;
         Pairs pairs;
@@ -49,7 +48,6 @@ public class Import extends Base {
         if (!config.card.available()) {
             throw new IOException("no card");
         }
-        process = new ProcessBuilder("caffeinate").start();
         try (Archive local = localVolume.open()) {
             local.backup();
             tmp = world.getTemp().createTempDirectory();
@@ -65,8 +63,6 @@ public class Import extends Base {
             console.info.println("moving jpgs to smugmug inbox ...");
             pairs.smugmugInbox(config.smugmugInbox);
             tmp.deleteDirectory();
-        } finally {
-            process.destroy();
         }
     }
 }

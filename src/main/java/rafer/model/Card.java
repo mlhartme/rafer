@@ -23,7 +23,7 @@ public class Card {
         return directory.isDirectory();
     }
 
-    /** Throws an error for non-pairs
+    /**
      * @return true if files have been downloaded to dest
      */
     public boolean download(Console console, FileNode dest) throws IOException {

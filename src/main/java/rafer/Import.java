@@ -25,15 +25,23 @@ import java.io.IOException;
 public class Import extends Base {
     private final World world;
     private final rafer.model.Config config;
+    private final Card card;
+    private final boolean noGeo;
 
-    public Import(World world, Console console) throws IOException {
-        this(world, console, rafer.model.Config.load(world));
+    public Import(World world, Console console, boolean noGeo, String cardOpt) throws IOException {
+        this(world, console, rafer.model.Config.load(world), noGeo, cardOpt);
     }
 
-    public Import(World world, Console console, rafer.model.Config config) {
+    public Import(World world, Console console, rafer.model.Config config, boolean noGeo, String cardOpt) {
         super(console, true);
         this.world = world;
         this.config = config;
+        this.noGeo = noGeo;
+        if (cardOpt.isEmpty()) {
+            card = config.card;
+        } else {
+            card = new Card(world.file(cardOpt));
+        }
     }
 
     public void doRun() throws IOException {
@@ -45,19 +53,21 @@ public class Import extends Base {
         if (!localVolume.available()) {
             throw new IOException("local archive not available");
         }
-        if (!config.card.available()) {
-            throw new IOException("no card");
+        if (!card.available()) {
+            throw new IOException("no card: " + card);
         }
         try (Archive local = localVolume.open()) {
             local.backup();
             tmp = world.getTemp().createTempDirectory();
-            if (!config.card.download(console, tmp)) {
+            if (!card.download(console, tmp)) {
                 console.info.println("no images");
                 return;
             }
             pairs = Pairs.normalize(console, tmp);
-            console.info.println("adding geotags ...");
-            pairs.geotags(console, config.gpxTracks);
+            if (!noGeo) {
+                console.info.println("adding geotags ...");
+                pairs.geotags(console, config.gpxTracks);
+            }
             console.info.println("saving rafs at " + localVolume + " ...");
             pairs.moveRafs(local);
             console.info.println("moving jpgs to smugmug inbox ...");

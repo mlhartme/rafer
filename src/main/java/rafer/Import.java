@@ -29,25 +29,21 @@ public class Import extends Base {
     private final boolean noGeo;
 
     public Import(World world, Console console, boolean noGeo, String cardOpt) throws IOException {
-        this(world, console, rafer.model.Config.load(world), noGeo, cardOpt);
-    }
-
-    public Import(World world, Console console, rafer.model.Config config, boolean noGeo, String cardOpt) {
         super(console, true);
+        this.config = rafer.model.Config.load(world);
         this.world = world;
-        this.config = config;
         this.noGeo = noGeo;
         if (cardOpt.isEmpty()) {
             card = config.card;
         } else {
-            card = new Card(world.file(cardOpt));
+            card = new Card(world.file(cardOpt), "");
         }
     }
 
     public void doRun() throws IOException {
         FileNode tmp;
         Volume localVolume;
-        Pairs pairs;
+        Images pairs;
 
         localVolume = config.volumes.get(0);
         if (!localVolume.available()) {
@@ -63,15 +59,13 @@ public class Import extends Base {
                 console.info.println("no images");
                 return;
             }
-            pairs = Pairs.normalize(console, tmp);
+            pairs = Images.normalize(console, tmp);
             if (!noGeo) {
                 console.info.println("adding geotags ...");
                 pairs.geotags(console, config.gpxTracks);
             }
-            console.info.println("saving rafs at " + localVolume + " ...");
-            pairs.moveRafs(local);
-            console.info.println("moving jpgs to smugmug inbox ...");
-            pairs.smugmugInbox(config.smugmugInbox);
+            console.info.println("archiving images at " + localVolume + ", moving jpgs to smugmug ...");
+            pairs.archive(local, config.smugmugInbox);
             tmp.deleteDirectory();
         }
     }

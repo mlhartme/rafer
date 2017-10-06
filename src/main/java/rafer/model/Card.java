@@ -1,10 +1,7 @@
 package rafer.model;
 
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.Node;
 import net.oneandone.sushi.fs.file.FileNode;
-import net.oneandone.sushi.fs.filter.Filter;
-import net.oneandone.sushi.util.Strings;
 
 import java.io.IOException;
 import java.nio.file.FileStore;
@@ -14,9 +11,11 @@ import java.util.List;
 
 public class Card {
     private final FileNode directory;
+    private final String path;
 
-    public Card(FileNode directory) {
+    public Card(FileNode directory, String path) {
         this.directory = directory;
+        this.path = path;
     }
 
     public boolean available() {
@@ -27,42 +26,39 @@ public class Card {
      * @return true if files have been downloaded to dest
      */
     public boolean download(Console console, FileNode dest) throws IOException {
-        List<FileNode> cardRafs;
+        List<FileNode> images;
         List<FileNode> downloaded;
-        FileNode dcim;
+        FileNode root;
 
         Utils.directory("card", directory);
 
-        dcim = directory.join("DCIM");
-        cardRafs = findRafs(console, dcim);
-        downloaded = download(console, cardRafs, dest);
-        onCardBackup(console, dcim, downloaded);
+        root = directory.join(path);
+        images = findImages(root);
+        downloaded = download(console, images, dest);
+        onCardBackup(console, root, downloaded);
         ejectOpt(console);
         return !downloaded.isEmpty();
     }
 
-    /** @return srcRafs actually downloaded */
-    private List<FileNode> download(Console console, List<FileNode> srcRafs, FileNode dest) throws IOException {
+    /** @return images actually downloaded */
+    private List<FileNode> download(Console console, List<FileNode> images, FileNode dest) throws IOException {
         List<FileNode> result;
-        FileNode destRaf;
-        FileNode destJpg;
         FileStore store;
         long available;
+        FileNode destImage;
 
         store = Files.getFileStore(dest.toPath());
-        console.info.println("downloading " + srcRafs.size() + " images to " + dest);
-        result = new ArrayList<>(srcRafs.size());
-        for (FileNode srcRaf : srcRafs) {
+        console.info.println("downloading " + images.size() + " images to " + dest);
+        result = new ArrayList<>(images.size());
+        for (FileNode image : images) {
             available = store.getUsableSpace();
             if (available < 1024l * 1024 * 1024) {
                 System.out.println("WARNING: disk space is low -- download is incomplete!");
                 break;
             }
-            destRaf = dest.join(srcRaf.getName());
-            destJpg = Utils.jpg(destRaf);
-            result.add(srcRaf);
-            srcRaf.copyFile(destRaf);
-            Utils.jpg(srcRaf).copyFile(destJpg);
+            destImage = dest.join(image.getName());
+            result.add(image);
+            image.copyFile(destImage);
         }
         return result;
     }
@@ -82,10 +78,10 @@ public class Card {
         }
     }
 
-    private void onCardBackup(Console console, FileNode src, List<FileNode> srcRafs) throws IOException {
+    private void onCardBackup(Console console, FileNode src, List<FileNode> srcImages) throws IOException {
         FileNode downloaded;
         String path;
-        FileNode destRaf;
+        FileNode destImage;
 
         downloaded = directory.join("DOWNLOADED");
         if (downloaded.isDirectory()) {
@@ -94,44 +90,34 @@ public class Card {
         }
         downloaded.checkNotExists();
 
-        console.info.println("moving " + srcRafs.size() + " images from " + src + " to " + downloaded);
-        for (FileNode srcRaf : srcRafs) {
-            path = srcRaf.getRelative(src);
-            destRaf = downloaded.join(path);
-            destRaf.getParent().mkdirsOpt();
-            srcRaf.move(destRaf);
-            Utils.jpg(srcRaf).move(Utils.jpg(destRaf));
+        console.info.println("moving " + srcImages.size() + " images from " + src + " to " + downloaded);
+        for (FileNode image : srcImages) {
+            path = image.getRelative(src);
+            destImage = downloaded.join(path);
+            destImage.getParent().mkdirsOpt();
+            image.move(destImage);
         }
-        if (findRafs(console, src).isEmpty()) {
+        if (findImages(src).isEmpty()) {
             console.info.println("complete download, removing " + src);
         }
     }
 
-    /** @return raf nodes with jpg sidecar */
-    private static List<FileNode> findRafs(Console console, FileNode dcim) throws IOException {
+    /** @return list of RAF or JPG files */
+    private static List<FileNode> findImages(FileNode root) throws IOException {
         List<FileNode> result;
         String name;
-        Filter filter;
 
-        dcim.checkDirectory();
-        filter = dcim.getWorld().filter();
-        filter.include("**/*.RAF");
-        filter.exclude("**/._*.RAF");
-        result = dcim.find(filter);
-        for (Node raf : result) {
-            if (!Utils.jpg((FileNode) raf).exists()) {
-                throw new IOException("missing jpg for " + raf);
-            }
-        }
-        for (Node other : dcim.find("**/*")) {
+        root.checkDirectory();
+        result = new ArrayList<>();
+        for (FileNode other : root.find("**/*")) {
             if (other.isDirectory()) {
                 // ignore
             } else if (other.getName().startsWith(".")) {
                 // ignore, e.g .DS_Store, .dropbox_device, finder previews: ._*
-            } else if (!result.contains(other)) {
+            } else {
                 name = other.getName();
-                if (name.endsWith(Utils.JPG) && result.contains(other.getParent().join(Strings.removeRight(name, Utils.JPG) + Utils.RAF))) {
-                    console.verbose.println("found sidecar jpg: " + other);
+                if (name.endsWith(Utils.JPG) || name.endsWith(Utils.RAF)) {
+                    result.add(other);
                 } else {
                     throw new IOException("unexpected file in image folder: " + other);
                 }

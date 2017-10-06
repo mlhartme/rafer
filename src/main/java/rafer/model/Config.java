@@ -18,8 +18,6 @@ package rafer.model;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import jdk.nashorn.internal.parser.JSONParser;
-import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
 import net.oneandone.sushi.fs.file.FileNode;
 
@@ -48,7 +46,7 @@ public class Config {
         world.setWorking(world.getHome());
         try {
             root = new JsonParser().parse(file.readString()).getAsJsonObject();
-            card = new Card(dir(world, root, "card"));
+            card = new Card(dir(world, root, "card"), "DCIM");
             volumes = volumes(world, root, "volumes");
             gpxTracks = dir(world, root, "gpxTracks");
             smugmug = dir(world, root, "smugmug");

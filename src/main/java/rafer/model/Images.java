@@ -15,32 +15,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Directory with pair of raf- and jpg files */
-public class Pairs {
+/** Directory with id-names images. */
+public class Images {
     /** set modified timestamps; renames to linked names */
-    public static Pairs normalize(Console console, FileNode directory) throws IOException {
+    public static Images normalize(Console console, FileNode directory) throws IOException {
         Map<String, Long> result;
         long timestamp;
         String origName;
-        String linkedName;
+        String idName;
 
         dates(console, directory);
         result = new HashMap<>();
-        for (Node raf : directory.find("*" + Utils.RAF)) {
-            timestamp = raf.getLastModified();
-            origName = Strings.removeRight(raf.getName(), Utils.RAF);
-            linkedName = linked(origName, timestamp);
-            result.put(linkedName, timestamp);
-            raf.move(directory.join(linkedName + Utils.RAF));
-            directory.join(origName + Utils.JPG).move(directory.join(linkedName + Utils.JPG));
+        for (Node image : directory.list()) {
+            timestamp = image.getLastModified();
+            origName = image.getName();
+            idName = idName(origName, timestamp);
+            result.put(idName, timestamp);
+            image.move(directory.join(idName));
         }
-        return new Pairs(directory, result);
+        return new Images(directory, result);
     }
 
-    private static String linked(String pair, long timestamp) {
+    private static String idName(String name, long timestamp) {
         String id;
 
-        id = Strings.removeLeft(pair, "DSCF");
+        if (name.startsWith("DSCF")) {
+            id = Strings.removeLeft(name, "DSCF");
+        } else if (name.startsWith("r") && name.length() > 7 && name.charAt(7) == 'x') {
+            id = name.substring(8);
+        } else {
+            id = name;
+        }
         return "r" + Utils.LINKED_FMT.format(new Date(timestamp)) + "x" + id;
     }
 
@@ -48,7 +53,7 @@ public class Pairs {
     private static void dates(Console console, FileNode dir) throws IOException {
         Launcher launcher;
 
-        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".", "-ext", Utils.RAF);
+        launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".");
         launcher.exec(console.info);
     }
 
@@ -57,11 +62,11 @@ public class Pairs {
     private final FileNode directory;
 
     /** maps file name (without extension to modified date */
-    private final Map<String, Long> pairs;
+    private final Map<String, Long> images;
 
-    private Pairs(FileNode directory, Map<String, Long> pairs) {
+    private Images(FileNode directory, Map<String, Long> images) {
         this.directory = directory;
-        this.pairs = pairs;
+        this.images = images;
     }
 
     //--
@@ -72,7 +77,7 @@ public class Pairs {
         long lastTimestamp;
 
         Utils.directory("gpxTracks", gpxTracks);
-        values = pairs.values();
+        values = images.values();
         firstTimestamp = Collections.min(values);
         lastTimestamp = Collections.max(values);
         console.info.println("images ranging from " + Utils.DAY_FMT.format(new Date(firstTimestamp)) + " to " + Utils.DAY_FMT.format(new Date(lastTimestamp)));
@@ -98,8 +103,6 @@ public class Pairs {
             launcher.arg("-geotag");
             launcher.arg(track.getAbsolute());
         }
-        launcher.arg("-ext", Utils.RAF);
-        launcher.arg("-ext", Utils.JPG);
         launcher.arg(".");
         if (tracks.isEmpty()) {
             console.info.println("no matching gpx files");
@@ -111,27 +114,56 @@ public class Pairs {
 
     //--
 
-    public void moveRafs(Archive dest) throws IOException {
+    public void archive(Archive dest, FileNode smugmugInbox) throws IOException {
+        String name;
         FileNode src;
         long modified;
 
-        for (Map.Entry<String, Long> entry : pairs.entrySet()) {
-            src = directory.join(entry.getKey() + Utils.RAF);
-            modified = entry.getValue();
-            dest.moveInto(src, Utils.MONTH_FMT.format(modified) + "/" + src.getName());
+        for (Map.Entry<String, Long> entry : images.entrySet()) {
+            name = entry.getKey();
+            src = directory.join(name);
+            if (name.endsWith(Utils.JPG)) {
+                src.copyFile(smugmugInbox.join(name).deleteFileOpt());
+            }
+            if (isRendering(name)) {
+                src.deleteFile();
+            } else {
+                modified = entry.getValue();
+                dest.moveInto(src, Utils.MONTH_FMT.format(modified) + "/" + src.getName());
+            }
         }
+    }
+
+    private boolean isRendering(String cmp) {
+        String base;
+
+        base = removeExtension(cmp);
+        for (String name : images.keySet()) {
+            if (!cmp.equals(name) && base.equals(removeExtension(name))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String removeExtension(String name) {
+        int idx;
+
+        idx = name.lastIndexOf('.');
+        return idx == -1 ? name : name.substring(0, idx);
     }
 
     public void smugmugInbox(FileNode smugmugInbox) throws IOException {
         FileNode src;
         FileNode dest;
 
-        for (String name : pairs.keySet()) {
-            src = directory.join(name + Utils.JPG);
-            dest = smugmugInbox.join(src.getName());
-            dest.checkNotExists();
-            src.move(dest);
+        for (String name : images.keySet()) {
+            if (name.endsWith(Utils.JPG)) {
+                src = directory.join(name);
+                dest = smugmugInbox.join(name);
+                dest.checkNotExists();
+                src.move(dest);
+            }
         }
     }
-
 }

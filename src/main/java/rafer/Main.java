@@ -43,7 +43,7 @@ public final class Main {
                .begin(console, "-v -e  { setVerbose(v) setStacktraces(e) }")
                         .addDefault(new Help(console, help()), "help")
                         .add(PackageVersion.class, "version")
-                        .add(Import.class, "import card?")
+                        .add(Import.class, "import -no-geo card")
                         .add(Smugmug.class, "smugmug")
                         .add(Status.class, "status")
                         .add(Sync.class, "sync master slave")
@@ -69,7 +69,7 @@ public final class Main {
                 + "  'status'                       print status of all volumes\n"
                 + "  'index' volume                 create or update volume index; this is kind of a commit command\n"
                 + "  'sync' master slave            sync changes from master to slave\n"
-                + "  'import' ['-noGeo'] [cardDir]  import card into local and smugmug inbox\n"
+                + "  'import' ['-no-geo'] [cardDir]  import card into local and smugmug inbox\n"
                 + "  'smugmug'                      smugmug upload\n"
                 + "  'smugmug-index                 create or update smugmug index\n"
         );

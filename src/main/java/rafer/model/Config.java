@@ -76,14 +76,10 @@ public class Config {
     private static Volume volume(World world, JsonObject volume) throws IOException {
         String name;
         FileNode directory;
-        String start;
-        String end;
 
         name = string(volume, "name");
         directory = dir(world, volume, "directory");
-        start = string(volume, "start", "010101");
-        end = string(volume, "start", "191231");
-        return new Volume(name, directory, start, end);
+        return new Volume(name, directory);
     }
 
     private static FileNode dir(World world, JsonObject root, String name) throws IOException {
@@ -92,16 +88,6 @@ public class Config {
 
     private static String string(JsonObject root, String name) throws IOException {
         return field(root, name).getAsString();
-    }
-
-    private static String string(JsonObject root, String name, String dflt) throws IOException {
-        JsonElement result;
-
-        result = root.get(name);
-        if (result == null) {
-            return dflt;
-        }
-        return result.getAsString();
     }
 
     private static JsonElement field(JsonObject root, String name) throws IOException {

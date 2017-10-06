@@ -4,7 +4,6 @@ import net.oneandone.sushi.fs.file.FileNode;
 import rafer.Smugmug;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,24 +11,16 @@ import java.util.Set;
  * Index and directory containing files.
  */
 public class Archive implements AutoCloseable {
-    public static Archive open(FileNode directory, Date start, Date end) throws IOException {
-        return new Archive(directory, Index.load(directory), start, end);
+    public static Archive open(FileNode directory) throws IOException {
+        return new Archive(directory, Index.load(directory));
     }
 
     public final FileNode directory;
     private final Index index;
-    private final Date start; // inclusive [
-    private final Date end; // [ exclusive
 
-    private Archive(FileNode directory, Index index, Date start, Date end) {
+    private Archive(FileNode directory, Index index) {
         this.directory = directory;
         this.index = index;
-        this.start = start;
-        this.end = end;
-    }
-
-    public boolean contains(Date date) {
-        return start.before(date) && date.before(end);
     }
 
     // TODO: don't adjust file name with date before calling this method; moveInfo should change the name itself
@@ -162,7 +153,7 @@ public class Archive implements AutoCloseable {
 
     // does not compare then name
     public boolean same(Archive other) {
-        return index.equals(other.index) && start == other.start && end == other.end;
+        return index.equals(other.index);
     }
 
     @Override

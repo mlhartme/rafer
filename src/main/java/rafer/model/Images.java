@@ -30,10 +30,30 @@ public class Images {
             timestamp = image.getLastModified();
             origName = image.getName();
             idName = idName(origName, timestamp);
+            idName = unique(directory, idName);
             result.put(idName, timestamp);
             image.move(directory.join(idName));
         }
         return new Images(directory, result);
+    }
+
+    private static String unique(FileNode directory, String idName) {
+        while (true) {
+            if (!directory.join(idName).exists()) {
+                return idName;
+            }
+            idName = withoutExt(idName) + "z" + ext(idName);
+        }
+    }
+
+    private static String withoutExt(String str) {
+        int idx = str.lastIndexOf('.');
+        return idx == - 1 ? str : str.substring(0, idx);
+    }
+
+    private static String ext(String str) {
+        int idx = str.lastIndexOf('.');
+        return idx == - 1 ? "" : str.substring(idx);
     }
 
     private static String idName(String name, long timestamp) {
@@ -53,6 +73,10 @@ public class Images {
     private static void dates(Console console, FileNode dir) throws IOException {
         Launcher launcher;
 
+        // make sure that files without DateTimeOriginal end up in January 1970
+        for (FileNode file : dir.list()) {
+            file.setLastModified(0);
+        }
         launcher = new Launcher(dir, "exiftool", "-FileModifyDate<DateTimeOriginal", ".");
         launcher.exec(console.info);
     }

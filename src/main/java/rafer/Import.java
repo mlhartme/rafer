@@ -43,7 +43,7 @@ public class Import extends Base {
     public void doRun() throws IOException {
         FileNode tmp;
         Volume localVolume;
-        Images pairs;
+        Images images;
 
         localVolume = config.volumes.get(0);
         if (!localVolume.available()) {
@@ -59,13 +59,13 @@ public class Import extends Base {
                 console.info.println("no images");
                 return;
             }
-            pairs = Images.normalize(console, tmp);
+            images = Images.normalize(console, tmp);
             if (!noGeo) {
                 console.info.println("adding geotags ...");
-                pairs.geotags(console, config.gpxTracks);
+                images.geotags(console, config.gpxTracks);
             }
             console.info.println("archiving images at " + localVolume + ", moving jpgs to smugmug ...");
-            pairs.archive(local, config.smugmugInbox);
+            images.archive(local, config.smugmugInbox);
             tmp.deleteDirectory();
         }
     }

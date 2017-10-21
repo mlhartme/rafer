@@ -43,7 +43,7 @@ public final class Main {
                .begin(console, "-v -e  { setVerbose(v) setStacktraces(e) }")
                         .addDefault(new Help(console, help()), "help")
                         .add(PackageVersion.class, "version")
-                        .add(Import.class, "import -no-geo card")
+                        .add(Import.class, "import -no-geo card?")
                         .add(Smugmug.class, "smugmug")
                         .add(Status.class, "status")
                         .add(Sync.class, "sync master slave")

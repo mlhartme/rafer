@@ -59,6 +59,7 @@ public class Images {
     private static String idName(String name, long timestamp) {
         String id;
 
+        name = name.toUpperCase();
         if (name.startsWith("DSCF")) {
             id = Strings.removeLeft(name, "DSCF");
         } else if (name.startsWith("r") && name.length() > 7 && name.charAt(7) == 'x') {

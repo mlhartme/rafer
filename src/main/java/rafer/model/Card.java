@@ -115,7 +115,7 @@ public class Card {
             } else if (other.getName().startsWith(".")) {
                 // ignore, e.g .DS_Store, .dropbox_device, finder previews: ._*
             } else {
-                name = other.getName();
+                name = other.getName().toUpperCase();
                 if (name.endsWith(Utils.JPG) || name.endsWith(Utils.RAF)) {
                     result.add(other);
                 } else {

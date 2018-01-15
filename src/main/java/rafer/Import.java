@@ -64,7 +64,7 @@ public class Import extends Base {
                 console.info.println("adding geotags ...");
                 images.geotags(console, config.gpxTracks);
             }
-            console.info.println("archiving images at " + localVolume + ", moving jpgs to smugmug ...");
+            console.info.println("archiving images at " + localVolume + " ...");
             images.archive(local);
             tmp.deleteTree(); // delete directory doesn't work, because JPGs still exist
         }

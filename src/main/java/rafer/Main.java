@@ -67,7 +67,7 @@ public final class Main {
                 + "  'status'                       print status of all volumes\n"
                 + "  'index' volume                 create or update volume index; this is kind of a commit command\n"
                 + "  'sync' master slave            sync changes from master to slave\n"
-                + "  'import' ['-no-geo'] [cardDir]  import card into local and smugmug inbox\n"
+                + "  'import' ['-no-geo'] [cardDir]  import card into local archive\n"
         );
         return builder.toString();
     }

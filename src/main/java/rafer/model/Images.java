@@ -175,18 +175,4 @@ public class Images {
         idx = name.lastIndexOf('.');
         return idx == -1 ? name : name.substring(0, idx);
     }
-
-    public void smugmugInbox(FileNode smugmugInbox) throws IOException {
-        FileNode src;
-        FileNode dest;
-
-        for (String name : images.keySet()) {
-            if (name.endsWith(Utils.JPG)) {
-                src = directory.join(name);
-                dest = smugmugInbox.join(name);
-                dest.checkNotExists();
-                src.move(dest);
-            }
-        }
-    }
 }

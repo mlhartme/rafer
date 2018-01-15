@@ -44,11 +44,9 @@ public final class Main {
                         .addDefault(new Help(console, help()), "help")
                         .add(PackageVersion.class, "version")
                         .add(Import.class, "import -no-geo card?")
-                        .add(Smugmug.class, "smugmug")
                         .add(Status.class, "status")
                         .add(Sync.class, "sync master slave")
-                        .add(Index.class, "index -md5 volume")
-                        .add(SmugmugIndex.class, "smugmug-index");
+                        .add(Index.class, "index -md5 volume");
             try {
                 result = cli.run(args);
                 return result;
@@ -70,8 +68,6 @@ public final class Main {
                 + "  'index' volume                 create or update volume index; this is kind of a commit command\n"
                 + "  'sync' master slave            sync changes from master to slave\n"
                 + "  'import' ['-no-geo'] [cardDir]  import card into local and smugmug inbox\n"
-                + "  'smugmug'                      smugmug upload\n"
-                + "  'smugmug-index                 create or update smugmug index\n"
         );
         return builder.toString();
     }

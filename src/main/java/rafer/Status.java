@@ -15,17 +15,12 @@
  */
 package rafer;
 
-import net.mlhartme.smuggler.cache.FolderData;
-import net.mlhartme.smuggler.cache.ImageData;
 import net.oneandone.inline.Console;
-import net.oneandone.sushi.fs.MkdirException;
 import net.oneandone.sushi.fs.World;
 import rafer.model.Archive;
 import rafer.model.Volume;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Status extends Base {
     private final rafer.model.Config config;
@@ -41,8 +36,6 @@ public class Status extends Base {
 
     public void doRun() throws IOException {
         String status;
-        FolderData smugmugRoot;
-        Map<String, ImageData> remoteMap;
 
         for (Volume volume : config.volumes) {
             if (volume.available()) {
@@ -53,12 +46,6 @@ public class Status extends Base {
                 status = "(not available)";
             }
             console.info.println(volume + ": " + status);
-        }
-        if (config.smugmug != null) {
-            smugmugRoot = FolderData.load(config.smugmug);
-            remoteMap = new HashMap<>();
-            smugmugRoot.imageMap(remoteMap);
-            console.info.println("smugmug: " + remoteMap.size());
         }
     }
 }

@@ -82,6 +82,15 @@ public class Index implements Iterable<String> {
         return false;
     }
 
+    public String lookup(String md5) {
+        for (String path : this) {
+            if (md5.equals(get(path))) {
+                return path;
+            }
+        }
+        return null;
+    }
+
     public String toString() {
         StringBuilder result;
 

@@ -37,8 +37,6 @@ public class Config {
         Card card;
         List<Volume> volumes;
         FileNode gpxTracks;
-        FileNode smugmug;
-        FileNode smugmugInbox;
         FileNode inboxTrash;
 
         world = file.getWorld();
@@ -49,10 +47,8 @@ public class Config {
             card = new Card(dir(world, root, "card"), "DCIM");
             volumes = volumes(world, root, "volumes");
             gpxTracks = dir(world, root, "gpxTracks");
-            smugmug = dir(world, root, "smugmug");
-            smugmugInbox = dir(world, root, "smugmugInbox");
             inboxTrash = dir(world, root, "inboxTrash");
-            return new Config(card, volumes, gpxTracks, smugmug, smugmugInbox, inboxTrash);
+            return new Config(card, volumes, gpxTracks, inboxTrash);
         } finally {
             world.setWorking(old);
         }
@@ -105,20 +101,13 @@ public class Config {
     public final Card card;
     public final List<Volume> volumes;
     public final FileNode gpxTracks;
-
-    // smugmug index or null to disable smugmug sync
-    public final FileNode smugmug;
-    public final FileNode smugmugInbox;
     public final FileNode inboxTrash;
 
 
-    public Config(Card card, List<Volume> volumes, FileNode gpxTracks, FileNode smugmug, FileNode smugmugInbox,
-                  FileNode inboxTrash) {
+    public Config(Card card, List<Volume> volumes, FileNode gpxTracks, FileNode inboxTrash) {
         this.card = card;
         this.volumes = volumes;
         this.gpxTracks = gpxTracks;
-        this.smugmug = smugmug;
-        this.smugmugInbox = smugmugInbox;
         this.inboxTrash = inboxTrash;
     }
 

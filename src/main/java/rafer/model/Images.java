@@ -139,7 +139,7 @@ public class Images {
 
     //--
 
-    public void archive(Archive dest, FileNode smugmugInbox) throws IOException {
+    public void archive(Archive dest) throws IOException {
         String name;
         FileNode src;
         long modified;
@@ -147,11 +147,7 @@ public class Images {
         for (Map.Entry<String, Long> entry : images.entrySet()) {
             name = entry.getKey();
             src = directory.join(name);
-            if (name.endsWith(Utils.JPG)) {
-                src.copyFile(smugmugInbox.join(name).deleteFileOpt());
-            }
             if (isRendering(name)) {
-                src.deleteFile();
             } else {
                 modified = entry.getValue();
                 dest.moveInto(src, Utils.MONTH_FMT.format(modified) + "/" + src.getName());
@@ -162,10 +158,12 @@ public class Images {
     private boolean isRendering(String cmp) {
         String base;
 
-        base = removeExtension(cmp);
-        for (String name : images.keySet()) {
-            if (!cmp.equals(name) && base.equals(removeExtension(name))) {
-                return true;
+        if (cmp.endsWith(Utils.JPG)) {
+            base = removeExtension(cmp);
+            for (String name : images.keySet()) {
+                if (!cmp.equals(name) && base.equals(removeExtension(name))) {
+                    return true;
+                }
             }
         }
         return false;
